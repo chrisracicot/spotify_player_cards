@@ -1,7 +1,7 @@
 import * as THREE from './public/vendor/three.module.js';
-import { JewelCaseShader } from './jewelCaseShader.js';
+import { FrontLidShader } from './jewelCaseShader.js';
 
-// Pre-configured albums
+// Pre-configured albums with tracklists
 const albums = [
   {
     id: 'snatch',
@@ -11,10 +11,24 @@ const albums = [
     trackCount: '15 Tracks',
     year: '2000',
     caseTint: [0.96, 0.98, 1.0],
-    thickness: 0.06,      // Locked to 6%
-    gloss: 0.40,          // Locked to 40%
-    iridescence: 0.13,    // Locked to 13%
-    sampleSong: 'Diamond - Klint'
+    thickness: 0.06,      // 6%
+    gloss: 0.40,          // 40%
+    iridescence: 0.13,    // 13%
+    sampleSong: 'Diamond - Klint',
+    tracklist: [
+      '1. Diamond - Klint',
+      '2. Supermoves - Overseer',
+      '3. Hernando\'s Hideaway - The Johnston Brothers',
+      '4. Golden Brown - The Stranglers',
+      '5. Dreadlock Holiday - 10cc',
+      '6. Hava Nagila - John Murphy & Daniel L. Griffiths',
+      '7. Cross The Tracks - Maceo & The Macks',
+      '8. Disco Science - Mirwais',
+      '9. Spinners - The Herbaliser',
+      '10. Angel - Massive Attack',
+      '11. F**kin\' in the Bushes - Oasis',
+      '12. Don\'t You Just Know It - Huey Piano Smith'
+    ]
   },
   {
     id: 'stayin_alive',
@@ -24,17 +38,25 @@ const albums = [
     trackCount: 'Single',
     year: '2023',
     caseTint: [0.97, 0.98, 1.0],
-    thickness: 0.06,      // Locked to 6%
-    gloss: 0.40,          // Locked to 40%
-    iridescence: 0.13,    // Locked to 13%
-    sampleSong: 'Stayin Alive (Club Mix)'
+    thickness: 0.06,      // 6%
+    gloss: 0.40,          // 40%
+    iridescence: 0.13,    // 13%
+    sampleSong: 'Stayin Alive (Club Mix)',
+    tracklist: [
+      '1. Stayin Alive in da Club (Radio Edit)',
+      '2. Stayin Alive in da Club (Extended Mix)',
+      '3. Stayin Alive in da Club (Dub Instrumental)',
+      '4. Stayin Alive in da Club (VIP Bass Rework)'
+    ]
   }
 ];
 
 let currentAlbumIndex = 0;
-let scene, camera, renderer, cdMesh, textureLoader;
+let scene, camera, renderer, textureLoader;
+let caseGroup, frontLidGroup, backTrayGroup, tracklistMesh;
 let isDragging = false;
 let previousPointerPosition = { x: 0, y: 0 };
+let pointerDownPosition = { x: 0, y: 0 };
 let targetRotation = { x: 0.10, y: -0.35 };
 let currentRotation = { x: 0.10, y: -0.35 };
 let autoRotate = false;
@@ -42,14 +64,18 @@ let isPlaying = false;
 let playbackInterval = null;
 let currentProgress = 32;
 
-// Authentic CD Jewel Case Geometry: crisp small corner radius, locked 6% thickness
-function createJewelCaseGeometry(width = 3.0, height = 3.0, depth = 0.18, radius = 0.02, smoothness = 4) {
+// Case Open/Close State
+let isOpen = false;
+let targetOpenAngle = 0; // 0 = closed, ~2.5 rad (~145 deg) = open
+let currentOpenAngle = 0;
+
+// Geometry generators
+function createBoxGeometryWithUVs(width, height, depth, radius = 0.02) {
   const shape = new THREE.Shape();
   const w = width / 2;
   const h = height / 2;
-  const r = radius; // 0.02 is subtle, typical for molded polycarbonate CD jewel cases
+  const r = radius;
 
-  // Clockwise rounded rectangle
   shape.moveTo(-w + r, -h);
   shape.lineTo(w - r, -h);
   shape.quadraticCurveTo(w, -h, w, -h + r);
@@ -64,18 +90,16 @@ function createJewelCaseGeometry(width = 3.0, height = 3.0, depth = 0.18, radius
     steps: 1,
     depth: depth,
     bevelEnabled: true,
-    bevelThickness: 0.012, // Subtle, realistic bevel
-    bevelSize: 0.012,
+    bevelThickness: 0.01,
+    bevelSize: 0.01,
     bevelOffset: 0,
-    bevelSegments: smoothness
+    bevelSegments: 3
   };
 
   const geom = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-
   geom.center();
   geom.computeVertexNormals();
 
-  // Generate UVs mapped cleanly for front (z > 0), back (z < 0), and edges
   const pos = geom.attributes.position;
   const normals = geom.attributes.normal;
   const uvs = new Float32Array(pos.count * 2);
@@ -86,16 +110,13 @@ function createJewelCaseGeometry(width = 3.0, height = 3.0, depth = 0.18, radius
     const z = pos.getZ(i);
     const nz = normals.getZ(i);
 
-    if (nz > 0.5) {
-      // Front face
+    if (nz > 0.45) {
       uvs[i * 2] = (x / width) + 0.5;
       uvs[i * 2 + 1] = (y / height) + 0.5;
-    } else if (nz < -0.5) {
-      // Back face
+    } else if (nz < -0.45) {
       uvs[i * 2] = (-x / width) + 0.5;
       uvs[i * 2 + 1] = (y / height) + 0.5;
     } else {
-      // Edge side walls
       uvs[i * 2] = (z / depth) + 0.5;
       uvs[i * 2 + 1] = (y / height) + 0.5;
     }
@@ -105,22 +126,83 @@ function createJewelCaseGeometry(width = 3.0, height = 3.0, depth = 0.18, radius
   return geom;
 }
 
+// Generate high-resolution canvas texture for the matte paper tracklist insert
+function createTracklistTexture(album) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 1024;
+  const ctx = canvas.getContext('2d');
+
+  // Matte textured paper background (natural off-white/cream)
+  ctx.fillStyle = '#f3f1ec';
+  ctx.fillRect(0, 0, 1024, 1024);
+
+  // Subtle paper grain
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.025)';
+  for (let i = 0; i < 5000; i++) {
+    const gx = Math.random() * 1024;
+    const gy = Math.random() * 1024;
+    ctx.fillRect(gx, gy, 2, 2);
+  }
+
+  // Left spine margin / fold accent line
+  ctx.strokeStyle = '#d4cfc5';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(90, 60);
+  ctx.lineTo(90, 964);
+  ctx.stroke();
+
+  // Album Title & Header
+  ctx.fillStyle = '#111827';
+  ctx.font = 'bold 44px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText(album.title, 130, 130);
+
+  ctx.fillStyle = '#6b7280';
+  ctx.font = '500 28px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText(album.artist, 130, 180);
+
+  // Decorative divider
+  ctx.strokeStyle = '#e5e7eb';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(130, 215);
+  ctx.lineTo(940, 215);
+  ctx.stroke();
+
+  // "TRACKLIST" subheader
+  ctx.fillStyle = '#9ca3af';
+  ctx.font = 'bold 20px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText('OFFICIAL TRACKLIST', 130, 260);
+
+  // Songs
+  ctx.fillStyle = '#1f2937';
+  ctx.font = '26px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  let y = 310;
+  album.tracklist.forEach((track) => {
+    ctx.fillText(track, 130, y);
+    y += 48;
+  });
+
+  // Footer / Catalog notes
+  ctx.fillStyle = '#9ca3af';
+  ctx.font = '20px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText(`STEREO COMPACT DISC • © ${album.year} ALL RIGHTS RESERVED`, 130, 930);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
 
 function init() {
-  console.log('INIT CALLED! Three version:', THREE.REVISION);
   const container = document.getElementById('viewport-container');
   const canvas = document.getElementById('canvas3d');
-  console.log('Container dimensions:', container.clientWidth, container.clientHeight);
 
-
-  // Scene
   scene = new THREE.Scene();
 
-  // Camera
   camera = new THREE.PerspectiveCamera(40, container.clientWidth / container.clientHeight, 0.1, 100);
-  camera.position.set(0, 0, 6.2);
+  camera.position.set(0, 0, 6.4);
 
-  // Renderer
   renderer = new THREE.WebGLRenderer({
     canvas: canvas,
     antialias: true,
@@ -132,7 +214,7 @@ function init() {
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.15;
 
-  // Lights
+  // Studio lighting
   const keyLight = new THREE.DirectionalLight(0xffffff, 2.2);
   keyLight.position.set(3, 4, 4);
   scene.add(keyLight);
@@ -145,84 +227,131 @@ function init() {
   backLight.position.set(0, 3, -4);
   scene.add(backLight);
 
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
   scene.add(ambientLight);
 
-  // Loaders
   textureLoader = new THREE.TextureLoader();
 
-  // Create a default placeholder canvas texture so shader has a valid sampler2D immediately
-  const dummyCanvas = document.createElement('canvas');
-  dummyCanvas.width = 64; dummyCanvas.height = 64;
-  const ctx = dummyCanvas.getContext('2d');
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, 64, 64);
-  const defaultTex = new THREE.CanvasTexture(dummyCanvas);
-  JewelCaseShader.uniforms.tCover.value = defaultTex;
+  // Root case container
+  caseGroup = new THREE.Group();
+  scene.add(caseGroup);
 
+  // Build the complete CD Jewel Case assembly
+  buildJewelCaseAssembly();
 
-  // Build the Jewel Case Mesh
-  createCaseMesh();
-
-  // Event Listeners
+  // Interaction & UI
   setupInteraction(canvas);
   setupUI();
   window.addEventListener('resize', onWindowResize);
 
-  // Initial Album Setup
   loadAlbum(0);
-
-  // Animation Loop
   animate();
 }
 
-function createCaseMesh() {
-  if (cdMesh) {
-    scene.remove(cdMesh);
-    cdMesh.geometry.dispose();
+function buildJewelCaseAssembly() {
+  // Clear previous meshes
+  while (caseGroup.children.length > 0) {
+    caseGroup.remove(caseGroup.children[0]);
   }
 
   const album = albums[currentAlbumIndex];
-  const depth = album.thickness * 2.2;
-  const geometry = createJewelCaseGeometry(3.0, 3.0, depth, 0.08, 4);
+  const caseWidth = 3.0;
+  const caseHeight = 3.0;
+  const halfDepth = 0.08; // half thickness for each shell (front & back)
+  const spineWidth = 0.22;
 
-  // Material with custom JewelCaseShader
-  const material = new THREE.ShaderMaterial({
-    uniforms: THREE.UniformsUtils.clone(JewelCaseShader.uniforms),
-    vertexShader: JewelCaseShader.vertexShader,
-    fragmentShader: JewelCaseShader.fragmentShader
+  // 1. Black Spine / Pivot Bar on the left
+  // Dimensions: tall as case, depth of both shells combined, distinct black molded plastic
+  const spineGeom = new THREE.BoxGeometry(spineWidth, caseHeight + 0.02, halfDepth * 2 + 0.03);
+  const spineMat = new THREE.MeshStandardMaterial({
+    color: 0x141416, // Matte deep black molded plastic
+    roughness: 0.55,
+    metalness: 0.05
   });
+  const spineMesh = new THREE.Mesh(spineGeom, spineMat);
+  // Positioned along the left hinge axis
+  spineMesh.position.set(-caseWidth / 2 - spineWidth / 2 + 0.06, 0, 0);
+  caseGroup.add(spineMesh);
 
-  material.uniforms.uThickness.value = album.thickness;
-  material.uniforms.uPlasticGloss.value = album.gloss;
-  material.uniforms.uPlasticIridescence.value = album.iridescence;
-  material.uniforms.uCaseTint.value = new THREE.Color(...album.caseTint);
-  material.uniforms.uSpineRibs.value = 1.0;
+  // 2. Back Tray Group (Stationary base when opening)
+  backTrayGroup = new THREE.Group();
+  caseGroup.add(backTrayGroup);
 
-  cdMesh = new THREE.Mesh(geometry, material);
-  scene.add(cdMesh);
+  // Back tray clear plastic shell
+  const backGeom = createBoxGeometryWithUVs(caseWidth, caseHeight, halfDepth, 0.02);
+  const backPlasticMat = new THREE.MeshStandardMaterial({
+    color: 0x222428,
+    roughness: 0.35,
+    metalness: 0.1,
+    transparent: true,
+    opacity: 0.95
+  });
+  const backShell = new THREE.Mesh(backGeom, backPlasticMat);
+  backShell.position.set(0, 0, -halfDepth / 2);
+  backTrayGroup.add(backShell);
+
+  // Matte Paper Tracklist Insert placed inside the back tray
+  const paperGeom = new THREE.PlaneGeometry(caseWidth - 0.08, caseHeight - 0.08);
+  const paperMat = new THREE.MeshBasicMaterial({
+    map: createTracklistTexture(album),
+    side: THREE.FrontSide
+  });
+  tracklistMesh = new THREE.Mesh(paperGeom, paperMat);
+  tracklistMesh.position.set(0, 0, 0.005); // Sitting right on the inside floor of the tray
+  backTrayGroup.add(tracklistMesh);
+
+  // 3. Front Lid Group (Hinged at the left edge: x = -caseWidth / 2)
+  // Pivot placed at the left hinge line so rotation around Y opens the case cleanly!
+  frontLidGroup = new THREE.Group();
+  const hingeX = -caseWidth / 2 + 0.04;
+  frontLidGroup.position.set(hingeX, 0, halfDepth / 2);
+  caseGroup.add(frontLidGroup);
+
+  // Lid mesh offset relative to the hinge pivot
+  const lidGeom = createBoxGeometryWithUVs(caseWidth, caseHeight, halfDepth, 0.02);
+  const lidShaderMat = new THREE.ShaderMaterial({
+    uniforms: THREE.UniformsUtils.clone(FrontLidShader.uniforms),
+    vertexShader: FrontLidShader.vertexShader,
+    fragmentShader: FrontLidShader.fragmentShader
+  });
+  lidShaderMat.uniforms.uPlasticGloss.value = album.gloss;
+  lidShaderMat.uniforms.uPlasticIridescence.value = album.iridescence;
+  lidShaderMat.uniforms.uCaseTint.value = new THREE.Color(...album.caseTint);
+
+  const lidMesh = new THREE.Mesh(lidGeom, lidShaderMat);
+  lidMesh.name = 'frontLidMesh';
+  lidMesh.position.set(caseWidth / 2 - 0.04, 0, 0); // Center relative to hinge
+  frontLidGroup.add(lidMesh);
 }
-
 
 function loadAlbum(index) {
   currentAlbumIndex = index;
   const album = albums[index];
 
-  // Load cover texture
+  // Load front album cover
   textureLoader.load(album.cover, (tex) => {
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.minFilter = THREE.LinearMipMapLinearFilter;
     tex.generateMipmaps = true;
 
-    if (cdMesh && cdMesh.material.uniforms) {
-      cdMesh.material.uniforms.tCover.value = tex;
-      cdMesh.material.uniforms.uThickness.value = album.thickness;
-      cdMesh.material.uniforms.uPlasticGloss.value = album.gloss;
-      cdMesh.material.uniforms.uPlasticIridescence.value = album.iridescence;
-      cdMesh.material.uniforms.uCaseTint.value = new THREE.Color(...album.caseTint);
+    const lidMesh = frontLidGroup.getObjectByName('frontLidMesh');
+    if (lidMesh && lidMesh.material.uniforms) {
+      lidMesh.material.uniforms.tCover.value = tex;
+      lidMesh.material.uniforms.uPlasticGloss.value = album.gloss;
+      lidMesh.material.uniforms.uPlasticIridescence.value = album.iridescence;
+      lidMesh.material.uniforms.uCaseTint.value = new THREE.Color(...album.caseTint);
     }
-
   });
+
+  // Update inside tracklist paper
+  if (tracklistMesh) {
+    if (tracklistMesh.material.map) {
+      tracklistMesh.material.map.dispose();
+    }
+    tracklistMesh.material.map = createTracklistTexture(album);
+    tracklistMesh.material.needsUpdate = true;
+  }
+
   // Update UI Elements
   document.getElementById('track-title').textContent = album.title;
   document.getElementById('track-artist').textContent = album.artist;
@@ -236,12 +365,26 @@ function loadAlbum(index) {
   });
 }
 
+function toggleCaseOpen() {
+  isOpen = !isOpen;
+  // Open 145 degrees (~2.53 radians) to fully display tracklist booklet and lid
+  targetOpenAngle = isOpen ? -2.53 : 0.0;
+
+  const hintText = document.getElementById('hint-text');
+  if (hintText) {
+    hintText.textContent = isOpen ? 'Click case to close • Drag to rotate in 3D' : 'Click case to open • Drag to rotate in 3D';
+  }
+}
+
 function setupInteraction(canvas) {
   let isPointerDown = false;
+  let hasMoved = false;
 
   canvas.addEventListener('pointerdown', (e) => {
     isPointerDown = true;
+    hasMoved = false;
     previousPointerPosition = { x: e.clientX, y: e.clientY };
+    pointerDownPosition = { x: e.clientX, y: e.clientY };
     canvas.setPointerCapture(e.pointerId);
   });
 
@@ -251,10 +394,14 @@ function setupInteraction(canvas) {
     const deltaX = e.clientX - previousPointerPosition.x;
     const deltaY = e.clientY - previousPointerPosition.y;
 
+    if (Math.hypot(e.clientX - pointerDownPosition.x, e.clientY - pointerDownPosition.y) > 6) {
+      hasMoved = true;
+    }
+
     targetRotation.y += deltaX * 0.008;
     targetRotation.x += deltaY * 0.008;
 
-    // Maximize vertical tilt strictly to 20 degrees (20 * PI / 180 ≈ 0.349 rad)
+    // Maximize vertical tilt strictly to 20 degrees (±20° = ±0.349 rad)
     const maxVerticalTilt = (20 * Math.PI) / 180;
     targetRotation.x = Math.max(-maxVerticalTilt, Math.min(maxVerticalTilt, targetRotation.x));
 
@@ -267,6 +414,11 @@ function setupInteraction(canvas) {
     try {
       canvas.releasePointerCapture(e.pointerId);
     } catch (err) {}
+
+    // If it was a clean click without dragging, toggle Open / Close!
+    if (!hasMoved) {
+      toggleCaseOpen();
+    }
   };
 
   canvas.addEventListener('pointerup', endDrag);
@@ -281,7 +433,6 @@ function setupInteraction(canvas) {
 }
 
 function setupUI() {
-  // Thumb clicks
   document.getElementById('thumb-snatch').addEventListener('click', () => loadAlbum(0));
   document.getElementById('thumb-stayin').addEventListener('click', () => loadAlbum(1));
 
@@ -307,7 +458,13 @@ function setupUI() {
         thickness: 0.06,
         gloss: 0.40,
         iridescence: 0.13,
-        sampleSong: 'Track 01'
+        sampleSong: 'Track 01',
+        tracklist: [
+          '1. Track 01 - Intro',
+          '2. Track 02 - Album Single',
+          '3. Track 03 - Interlude',
+          '4. Track 04 - Outro'
+        ]
       };
 
       albums.push(customAlbum);
@@ -317,12 +474,10 @@ function setupUI() {
     reader.readAsDataURL(file);
   });
 
-  // Audio Playback Simulation
   setupAudioPlayer();
 }
 
 function setupAudioPlayer() {
-
   const playBtn = document.getElementById('btn-play');
   const playIcon = document.getElementById('play-icon');
   const pauseIcon = document.getElementById('pause-icon');
@@ -349,7 +504,6 @@ function setupAudioPlayer() {
     }
   });
 
-  // Track skip
   document.getElementById('btn-prev').addEventListener('click', () => {
     const prev = (currentAlbumIndex - 1 + albums.length) % albums.length;
     loadAlbum(prev);
@@ -389,13 +543,19 @@ function animate() {
     targetRotation.y += 0.005;
   }
 
-  // Smooth lerp damping rotation for silky smooth feel
+  // Smooth rotation lerp
   currentRotation.x += (targetRotation.x - currentRotation.x) * 0.08;
   currentRotation.y += (targetRotation.y - currentRotation.y) * 0.08;
 
-  if (cdMesh) {
-    cdMesh.rotation.x = currentRotation.x;
-    cdMesh.rotation.y = currentRotation.y;
+  if (caseGroup) {
+    caseGroup.rotation.x = currentRotation.x;
+    caseGroup.rotation.y = currentRotation.y;
+  }
+
+  // Smooth case open/close hinge animation
+  if (frontLidGroup) {
+    currentOpenAngle += (targetOpenAngle - currentOpenAngle) * 0.1;
+    frontLidGroup.rotation.y = currentOpenAngle;
   }
 
   renderer.render(scene, camera);
@@ -407,4 +567,3 @@ if (document.readyState === 'loading') {
 } else {
   init();
 }
-
