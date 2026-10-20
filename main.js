@@ -320,10 +320,9 @@ function setupUI() {
   // Audio Playback Simulation
   setupAudioPlayer();
 }
- });
-}
 
 function setupAudioPlayer() {
+
   const playBtn = document.getElementById('btn-play');
   const playIcon = document.getElementById('play-icon');
   const pauseIcon = document.getElementById('pause-icon');
