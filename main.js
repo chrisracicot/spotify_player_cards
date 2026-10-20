@@ -10,10 +10,10 @@ const albums = [
     cover: './public/covers/snatch.png',
     trackCount: '15 Tracks',
     year: '2000',
-    caseTint: [0.95, 0.98, 1.0],
-    thickness: 0.12,
-    gloss: 0.88,
-    iridescence: 0.35,
+    caseTint: [0.96, 0.98, 1.0],
+    thickness: 0.06,      // Locked to 6%
+    gloss: 0.40,          // Locked to 40%
+    iridescence: 0.13,    // Locked to 13%
     sampleSong: 'Diamond - Klint'
   },
   {
@@ -23,10 +23,10 @@ const albums = [
     cover: './public/covers/stayin_alive.png',
     trackCount: 'Single',
     year: '2023',
-    caseTint: [0.98, 0.95, 1.0],
-    thickness: 0.10,
-    gloss: 0.92,
-    iridescence: 0.50,
+    caseTint: [0.97, 0.98, 1.0],
+    thickness: 0.06,      // Locked to 6%
+    gloss: 0.40,          // Locked to 40%
+    iridescence: 0.13,    // Locked to 13%
     sampleSong: 'Stayin Alive (Club Mix)'
   }
 ];
@@ -35,20 +35,19 @@ let currentAlbumIndex = 0;
 let scene, camera, renderer, cdMesh, textureLoader;
 let isDragging = false;
 let previousPointerPosition = { x: 0, y: 0 };
-let targetRotation = { x: 0.15, y: -0.35 };
-let currentRotation = { x: 0.15, y: -0.35 };
+let targetRotation = { x: 0.10, y: -0.35 };
+let currentRotation = { x: 0.10, y: -0.35 };
 let autoRotate = false;
 let isPlaying = false;
 let playbackInterval = null;
 let currentProgress = 32;
 
-// Rounded box generator for authentic CD Jewel Case
-function createJewelCaseGeometry(width = 3.0, height = 3.0, depth = 0.32, radius = 0.08, smoothness = 8) {
-  // Use a clean beveled box shape
+// Authentic CD Jewel Case Geometry: crisp small corner radius, locked 6% thickness
+function createJewelCaseGeometry(width = 3.0, height = 3.0, depth = 0.18, radius = 0.02, smoothness = 4) {
   const shape = new THREE.Shape();
   const w = width / 2;
   const h = height / 2;
-  const r = radius;
+  const r = radius; // 0.02 is subtle, typical for molded polycarbonate CD jewel cases
 
   // Clockwise rounded rectangle
   shape.moveTo(-w + r, -h);
@@ -65,13 +64,14 @@ function createJewelCaseGeometry(width = 3.0, height = 3.0, depth = 0.32, radius
     steps: 1,
     depth: depth,
     bevelEnabled: true,
-    bevelThickness: 0.04,
-    bevelSize: 0.04,
+    bevelThickness: 0.012, // Subtle, realistic bevel
+    bevelSize: 0.012,
     bevelOffset: 0,
     bevelSegments: smoothness
   };
 
   const geom = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+
   geom.center();
   geom.computeVertexNormals();
 
@@ -223,23 +223,12 @@ function loadAlbum(index) {
     }
 
   });
-
   // Update UI Elements
   document.getElementById('track-title').textContent = album.title;
   document.getElementById('track-artist').textContent = album.artist;
   document.getElementById('track-badge').textContent = `${album.trackCount} • ${album.year}`;
   document.getElementById('track-cover-mini').src = album.cover;
   document.getElementById('now-playing-sample').textContent = album.sampleSong;
-
-  // Sliders sync
-  document.getElementById('slider-thickness').value = album.thickness * 100;
-  document.getElementById('val-thickness').textContent = `${Math.round(album.thickness * 100)}%`;
-
-  document.getElementById('slider-gloss').value = album.gloss * 100;
-  document.getElementById('val-gloss').textContent = `${Math.round(album.gloss * 100)}%`;
-
-  document.getElementById('slider-irid').value = album.iridescence * 100;
-  document.getElementById('val-irid').textContent = `${Math.round(album.iridescence * 100)}%`;
 
   // Highlight active thumb
   document.querySelectorAll('.album-thumb-btn').forEach((btn, i) => {
@@ -265,8 +254,9 @@ function setupInteraction(canvas) {
     targetRotation.y += deltaX * 0.008;
     targetRotation.x += deltaY * 0.008;
 
-    // Constrain pitch to avoid flipping upside down
-    targetRotation.x = Math.max(-Math.PI * 0.45, Math.min(Math.PI * 0.45, targetRotation.x));
+    // Maximize vertical tilt strictly to 20 degrees (20 * PI / 180 ≈ 0.349 rad)
+    const maxVerticalTilt = (20 * Math.PI) / 180;
+    targetRotation.x = Math.max(-maxVerticalTilt, Math.min(maxVerticalTilt, targetRotation.x));
 
     previousPointerPosition = { x: e.clientX, y: e.clientY };
   });
@@ -291,33 +281,6 @@ function setupInteraction(canvas) {
 }
 
 function setupUI() {
-  // Preset Angles
-  document.getElementById('btn-view-front').addEventListener('click', () => {
-    targetRotation = { x: 0, y: 0 };
-    setActiveHudBtn('btn-view-front');
-  });
-
-  document.getElementById('btn-view-tilt').addEventListener('click', () => {
-    targetRotation = { x: 0.22, y: -0.45 };
-    setActiveHudBtn('btn-view-tilt');
-  });
-
-  document.getElementById('btn-view-edge').addEventListener('click', () => {
-    // 82° edge view to inspect thick plastic spine
-    targetRotation = { x: 0.05, y: -Math.PI * 0.45 };
-    setActiveHudBtn('btn-view-edge');
-  });
-
-  document.getElementById('btn-view-back').addEventListener('click', () => {
-    targetRotation = { x: 0, y: Math.PI };
-    setActiveHudBtn('btn-view-back');
-  });
-
-  function setActiveHudBtn(id) {
-    document.querySelectorAll('.hud-btn').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-  }
-
   // Thumb clicks
   document.getElementById('thumb-snatch').addEventListener('click', () => loadAlbum(0));
   document.getElementById('thumb-stayin').addEventListener('click', () => loadAlbum(1));
@@ -340,10 +303,10 @@ function setupUI() {
         cover: customUrl,
         trackCount: 'User Track',
         year: '2026',
-        caseTint: [0.95, 0.98, 1.0],
-        thickness: 0.11,
-        gloss: 0.88,
-        iridescence: 0.42,
+        caseTint: [0.96, 0.98, 1.0],
+        thickness: 0.06,
+        gloss: 0.40,
+        iridescence: 0.13,
         sampleSong: 'Track 01'
       };
 
@@ -354,85 +317,10 @@ function setupUI() {
     reader.readAsDataURL(file);
   });
 
-  // Sliders
-  const thicknessSlider = document.getElementById('slider-thickness');
-  thicknessSlider.addEventListener('input', (e) => {
-    const val = parseFloat(e.target.value) / 100;
-    albums[currentAlbumIndex].thickness = val;
-    document.getElementById('val-thickness').textContent = `${Math.round(val * 100)}%`;
-    createCaseMesh();
-    loadAlbum(currentAlbumIndex);
-  });
-
-  const glossSlider = document.getElementById('slider-gloss');
-  glossSlider.addEventListener('input', (e) => {
-    const val = parseFloat(e.target.value) / 100;
-    albums[currentAlbumIndex].gloss = val;
-    document.getElementById('val-gloss').textContent = `${Math.round(val * 100)}%`;
-    if (cdMesh && cdMesh.material.uniforms) {
-      cdMesh.material.uniforms.uPlasticGloss.value = val;
-    }
-  });
-
-  const iridSlider = document.getElementById('slider-irid');
-  iridSlider.addEventListener('input', (e) => {
-    const val = parseFloat(e.target.value) / 100;
-    albums[currentAlbumIndex].iridescence = val;
-    document.getElementById('val-irid').textContent = `${Math.round(val * 100)}%`;
-    if (cdMesh && cdMesh.material.uniforms) {
-      cdMesh.material.uniforms.uPlasticIridescence.value = val;
-    }
-  });
-
-  // Spine ribs toggle
-  const ribToggle = document.getElementById('toggle-ribs');
-  ribToggle.addEventListener('change', (e) => {
-    if (cdMesh && cdMesh.material.uniforms) {
-      cdMesh.material.uniforms.uSpineRibs.value = e.target.checked ? 1.0 : 0.0;
-    }
-  });
-
-  // Auto-rotate toggle
-  const autoRotateToggle = document.getElementById('toggle-autorotate');
-  autoRotateToggle.addEventListener('change', (e) => {
-    autoRotate = e.target.checked;
-  });
-
-  // Material Presets
-  setupMaterialPresets();
-
   // Audio Playback Simulation
   setupAudioPlayer();
 }
-
-function setupMaterialPresets() {
-  const presets = {
-    standard: { gloss: 0.85, iridescence: 0.40, thickness: 0.11, tint: [0.95, 0.98, 1.0] },
-    crystal: { gloss: 0.96, iridescence: 0.65, thickness: 0.14, tint: [1.0, 1.0, 1.0] },
-    matte: { gloss: 0.35, iridescence: 0.15, thickness: 0.09, tint: [0.92, 0.94, 0.96] },
-    smoke: { gloss: 0.90, iridescence: 0.50, thickness: 0.12, tint: [0.65, 0.70, 0.80] }
-  };
-
-  document.querySelectorAll('.mat-card').forEach(card => {
-    card.addEventListener('click', () => {
-      document.querySelectorAll('.mat-card').forEach(c => c.classList.remove('active'));
-      card.classList.add('active');
-
-      const presetKey = card.dataset.preset;
-      const p = presets[presetKey];
-      if (p && cdMesh && cdMesh.material.uniforms) {
-        cdMesh.material.uniforms.uPlasticGloss.value = p.gloss;
-        cdMesh.material.uniforms.uPlasticIridescence.value = p.iridescence;
-        cdMesh.material.uniforms.uCaseTint.value = p.tint;
-
-        document.getElementById('slider-gloss').value = p.gloss * 100;
-        document.getElementById('val-gloss').textContent = `${Math.round(p.gloss * 100)}%`;
-
-        document.getElementById('slider-irid').value = p.iridescence * 100;
-        document.getElementById('val-irid').textContent = `${Math.round(p.iridescence * 100)}%`;
-      }
-    });
-  });
+ });
 }
 
 function setupAudioPlayer() {

@@ -38,26 +38,6 @@
     <div class="viewport-container" id="viewport-container">
       <canvas id="canvas3d"></canvas>
 
-      <!-- Viewport HUD: Quick Camera Angles -->
-      <div class="viewport-hud">
-        <button class="hud-btn" id="btn-view-front">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
-          Front
-        </button>
-        <button class="hud-btn active" id="btn-view-tilt">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l16 4-4 12-12-4z"/></svg>
-          Shine Tilt
-        </button>
-        <button class="hud-btn" id="btn-view-edge">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="2" x2="12" y2="22" stroke-width="4"/></svg>
-          82° Edge
-        </button>
-        <button class="hud-btn" id="btn-view-back">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-          Back
-        </button>
-      </div>
-
       <!-- Carousel Thumbnail Strip -->
       <div class="album-bar" id="album-bar">
         <button class="album-thumb-btn active" id="thumb-snatch" title="Snatch Soundtrack">
@@ -87,7 +67,7 @@
       </div>
     </div>
 
-    <!-- Inspector / Customizer Sidebar -->
+    <!-- Inspector / Audio Sidebar -->
     <aside class="sidebar">
       <!-- Current Album Info -->
       <div class="panel-section">
@@ -136,81 +116,8 @@
           </div>
         </div>
       </div>
-
-      <!-- Case Material Style Presets -->
-      <div class="panel-section">
-        <span class="panel-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          Plastic Material Presets
-        </span>
-        <div class="material-grid">
-          <div class="mat-card active" data-preset="standard">
-            <div class="mat-name">Polystyrene</div>
-            <div class="mat-desc">Standard 90s clear jewel case</div>
-          </div>
-          <div class="mat-card" data-preset="crystal">
-            <div class="mat-name">Crystal Gloss</div>
-            <div class="mat-desc">High-clarity optical resin</div>
-          </div>
-          <div class="mat-card" data-preset="matte">
-            <div class="mat-name">Frosted Matte</div>
-            <div class="mat-desc">Diffused plastic surface</div>
-          </div>
-          <div class="mat-card" data-preset="smoke">
-            <div class="mat-name">Smoked Case</div>
-            <div class="mat-desc">Dark tinted jewel box</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Physical Parameters Sliders -->
-      <div class="panel-section">
-        <span class="panel-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
-          Geometry & Plastic Finish
-        </span>
-
-        <div class="control-group">
-          <div class="control-label-row">
-            <span class="control-name">Case Thickness</span>
-            <span class="control-value" id="val-thickness">12%</span>
-          </div>
-          <input type="range" class="slider" id="slider-thickness" min="4" max="25" value="12">
-        </div>
-
-        <div class="control-group">
-          <div class="control-label-row">
-            <span class="control-name">Plastic Specular Gloss</span>
-            <span class="control-value" id="val-gloss">88%</span>
-          </div>
-          <input type="range" class="slider" id="slider-gloss" min="10" max="100" value="88">
-        </div>
-
-        <div class="control-group">
-          <div class="control-label-row">
-            <span class="control-name">Iridescent Sheen</span>
-            <span class="control-value" id="val-irid">35%</span>
-          </div>
-          <input type="range" class="slider" id="slider-irid" min="0" max="100" value="35">
-        </div>
-
-        <div class="toggle-row">
-          <span>Spine Ribbing / Grip Lines</span>
-          <label class="switch">
-            <input type="checkbox" id="toggle-ribs" checked>
-            <span class="switch-slider"></span>
-          </label>
-        </div>
-
-        <div class="toggle-row">
-          <span>Slow Turntable Rotation</span>
-          <label class="switch">
-            <input type="checkbox" id="toggle-autorotate">
-            <span class="switch-slider"></span>
-          </label>
-        </div>
-      </div>
     </aside>
+
   </main>
 
   <!-- Module Script -->

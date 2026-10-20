@@ -21,12 +21,14 @@ export const JewelCaseShader = {
   vertexShader: `
     varying vec2 vUv;
     varying vec3 vNormal;
+    varying vec3 vObjectNormal;
     varying vec3 vWorldPosition;
     varying vec3 vViewPosition;
 
     void main() {
       vUv = uv;
       vNormal = normalize(normalMatrix * normal);
+      vObjectNormal = normal; // Local geometry normal for exact face classification
       vec4 worldPos = modelMatrix * vec4(position, 1.0);
       vWorldPosition = worldPos.xyz;
       vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
@@ -44,15 +46,15 @@ export const JewelCaseShader = {
     uniform float uPlasticIridescence;
     uniform vec3 uLightPos;
     uniform float uRoughness;
-    uniform float uSpineRibs;
     uniform vec3 uCaseTint;
 
     varying vec2 vUv;
     varying vec3 vNormal;
+    varying vec3 vObjectNormal;
     varying vec3 vWorldPosition;
     varying vec3 vViewPosition;
 
-    // Spectral iridescent sheen for optical plastic film / thin film interference
+    // Spectral iridescent sheen for optical plastic film
     vec3 spectralColor(float t) {
       vec3 w = vec3(
         0.5 + 0.5 * cos(6.28318 * (t + 0.0)),
@@ -68,14 +70,10 @@ export const JewelCaseShader = {
       vec3 L = normalize(uLightPos - vWorldPosition);
       vec3 H = normalize(L + V);
 
-      // Distinguish faces by normal
-      // Front face: N.z > 0.5
-      // Back face: N.z < -0.5
-      // Sides/Edges: abs(N.z) <= 0.5
-      bool isFront = N.z > 0.6;
-      bool isBack = N.z < -0.6;
+      // Classify faces using Object-Space normal so front face stays visible up to ~89.9°
+      bool isFront = vObjectNormal.z > 0.45;
+      bool isBack = vObjectNormal.z < -0.45;
       bool isEdge = !isFront && !isBack;
-      bool isLeftSpine = isEdge && N.x < -0.6;
 
       // Fresnel reflection (Schlick approximation for clear polystyrene / plastic, n ≈ 1.58 -> F0 ≈ 0.05)
       float NdotV = max(dot(N, V), 0.0);
@@ -84,11 +82,11 @@ export const JewelCaseShader = {
 
       // Specular highlight: Sharp clear plastic shine streak
       float NdotH = max(dot(N, H), 0.0);
-      float specPower = mix(30.0, 160.0, uPlasticGloss);
+      float specPower = mix(25.0, 140.0, uPlasticGloss);
       float spec = pow(NdotH, specPower);
 
       // Secondary broad glossy sheen
-      float broadSpec = pow(NdotH, 12.0) * 0.3;
+      float broadSpec = pow(NdotH, 10.0) * 0.25;
 
       // Iridescent dispersion: subtle optical color bands in the specular reflection
       float sheenAngle = dot(N, V) * 1.5 + dot(N, L) * 0.8;
@@ -98,67 +96,47 @@ export const JewelCaseShader = {
 
       if (isFront) {
         // FRONT FACE: Album cover beneath clear plastic jewel case
-        // In a real jewel case, the album booklet sits behind a ~1.2mm front clear tray
-        // Slight parallax refraction
-        vec2 parallaxUv = vUv - (V.xy * 0.012);
-        vec4 coverTex = texture2D(tCover, parallaxUv);
+        // Stretched closer to the edge with a minimal crisp jewel case border
+        vec4 coverTex = texture2D(tCover, vUv);
+        vec3 artColor = coverTex.rgb;
 
-        // CD case plastic border & tab grip accents (authentic jewel case details)
-        // Slim clear rim around the booklet
-        float borderInset = 0.025;
+        // Very slim 0.8% jewel case clear rim
+        float borderInset = 0.008;
         bool inBorder = vUv.x < borderInset || vUv.x > (1.0 - borderInset) ||
                         vUv.y < borderInset || vUv.y > (1.0 - borderInset);
 
-        vec3 artColor = coverTex.rgb;
-
         if (inBorder) {
-          // Clear jewel case outer border
-          artColor = mix(coverTex.rgb * 0.6, vec3(0.9, 0.95, 1.0) * 0.2, 0.7);
+          artColor = mix(coverTex.rgb * 0.5, vec3(0.92, 0.96, 1.0) * 0.25, 0.8);
         }
 
         // Combine album cover with plastic gloss
-        // Plastic reflection adds light on top rather than replacing the artwork
-        vec3 plasticReflection = vec3(1.0) * spec * (uPlasticGloss * 1.2) +
+        vec3 plasticReflection = vec3(1.0) * spec * (uPlasticGloss * 1.1) +
                                 iridColor * (fresnel * uPlasticIridescence * 0.8) +
                                 vec3(1.0) * broadSpec * 0.2;
 
         finalColor = artColor * uCaseTint + plasticReflection;
 
         // Subtle jewel-case diagonal ambient light streak across the surface
-        float streak = smoothstep(0.4, 0.5, sin((vUv.x + vUv.y) * 4.0 + dot(V, vec3(1.0)) * 2.0));
-        finalColor += vec3(0.12) * streak * uPlasticGloss * fresnel;
+        float streak = smoothstep(0.42, 0.52, sin((vUv.x + vUv.y) * 4.0 + dot(V, vec3(1.0)) * 2.0));
+        finalColor += vec3(0.08) * streak * uPlasticGloss * fresnel;
 
       } else if (isBack) {
-        // BACK FACE: CD Inlay tray
-        vec4 coverTex = texture2D(tCover, vec2(1.0 - vUv.x, vUv.y));
-        // Back of a jewel case is slightly darker inlay with plastic sheen
-        vec3 trayColor = coverTex.rgb * 0.75;
-        vec3 plasticReflection = vec3(1.0) * spec * uPlasticGloss * 0.8;
+        // BACK FACE: Clean solid CD tray back (dark smoke/grey tray plastic, NO image)
+        vec3 trayColor = vec3(0.12, 0.13, 0.15);
+        vec3 plasticReflection = vec3(1.0) * spec * uPlasticGloss * 0.7;
         finalColor = trayColor * uCaseTint + plasticReflection;
 
       } else {
-        // EDGES & SIDEWALLS (The thick plastic jewel case boundary)
-        // Clear thick polystyrene plastic with internal refraction and glossy rim
-        vec3 edgePlasticBase = vec3(0.88, 0.92, 0.96);
+        // EDGES & SIDEWALLS: Authentic clean translucent polystyrene CD case edges (NO image)
+        vec3 edgePlasticBase = vec3(0.85, 0.89, 0.94);
+        float rim = pow(1.0 - NdotV, 2.2);
 
-        if (isLeftSpine) {
-          // Left spine hinge/ribs (authentic 90s CD jewel case ribbed grip lines)
-          float ribs = 1.0;
-          if (uSpineRibs > 0.5) {
-            ribs = 0.75 + 0.25 * sin(vUv.y * 140.0);
-          }
-          vec3 spineTone = vec3(0.24, 0.26, 0.30);
-          finalColor = spineTone * ribs + vec3(1.0) * spec * 1.6 + (iridColor * fresnel * 0.4);
-        } else {
-          // Top, bottom, and right opening tabs (clean translucent plastic)
-          float rim = pow(1.0 - NdotV, 2.5);
-          // Plastic edge catches high specular glint
-          finalColor = edgePlasticBase * 0.4 + vec3(1.0) * (spec * 1.8 + rim * 0.6 * uPlasticGloss) + (iridColor * fresnel * 0.3);
-        }
+        // Clean plastic sidewall with subtle refraction depth and specular glint
+        finalColor = edgePlasticBase * 0.35 + vec3(1.0) * (spec * 1.5 + rim * 0.5 * uPlasticGloss) + (iridColor * fresnel * 0.25);
       }
 
       gl_FragColor = vec4(finalColor, 1.0);
     }
-
   `
 };
+
