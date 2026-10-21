@@ -1,24 +1,18 @@
 {
   "name": "spotify_player_cards",
   "version": "1.0.0",
-  "description": "A web application for interactive Spotify player cards.",
-  "main": "index.js",
+  "description": "Interactive 3D Spotify CD Jewel Case Music Player",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/chrisracicot/spotify_player_cards.git"
+  "devDependencies": {
+    "@vitejs/plugin-basic-ssl": "^2.3.0",
+    "vite": "^8.1.1"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/chrisracicot/spotify_player_cards/issues"
-  },
-  "homepage": "https://github.com/chrisracicot/spotify_player_cards#readme",
   "dependencies": {
-    "three": "^0.186.1"
+    "three": "^0.185.1"
   }
 }

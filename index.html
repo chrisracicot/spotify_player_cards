@@ -27,11 +27,27 @@
       </div>
       <h1 class="brand-title">Spotify Jewel Case 3D</h1>
     </div>
-    <div class="header-status">
-      <span class="status-dot"></span>
-      <span>Polystyrene Shader Active</span>
+    <div class="header-actions">
+      <!-- Spotify Album Search -->
+      <div class="search-box">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" id="spotify-search-input" placeholder="Search Spotify albums..." autocomplete="off">
+        <div id="search-dropdown" class="search-dropdown" style="display: none;"></div>
+      </div>
+
+      <!-- Spotify Connect Button / User Badge -->
+      <button id="btn-spotify-login" class="spotify-auth-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.508 17.302c-.216.353-.674.466-1.026.25-2.813-1.718-6.353-2.106-10.523-1.154-.403.092-.806-.157-.898-.56-.092-.402.157-.805.56-.897 4.568-1.044 8.49-.607 11.636 1.335.353.216.466.674.251 1.026zm1.47-3.266c-.272.443-.852.583-1.295.31-3.22-1.979-8.129-2.55-11.938-1.393-.497.151-1.027-.132-1.178-.63-.151-.497.132-1.027.63-1.178 4.354-1.321 9.774-.68 13.47 1.595.443.272.584.852.311 1.296zm.126-3.41c-3.86-2.292-10.228-2.503-13.908-1.385-.592.18-1.217-.16-1.396-.753-.18-.592.16-1.217.753-1.396 4.234-1.285 11.266-1.037 15.698 1.594.532.316.708 1.005.392 1.537-.315.533-1.004.709-1.539.403z"/>
+        </svg>
+        <span id="spotify-auth-text">Connect Spotify</span>
+      </button>
     </div>
   </header>
+
 
   <main>
     <!-- 3D Interactive Viewport -->

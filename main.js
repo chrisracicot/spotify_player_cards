@@ -1,5 +1,7 @@
 import * as THREE from './public/vendor/three.module.js';
 import { FrontLidShader } from './jewelCaseShader.js';
+import { loginWithSpotify, logoutSpotify, checkAuthCallback, getAccessToken } from './spotifyAuth.js';
+import { searchSpotifyAlbums, getSpotifyAlbumDetails, playSpotifyTrack, pauseSpotifyPlayback, skipSpotifyNext, skipSpotifyPrevious } from './spotifyApi.js';
 
 // Pre-configured albums with tracklists
 const albums = [
@@ -474,7 +476,123 @@ function setupUI() {
     reader.readAsDataURL(file);
   });
 
+  // Spotify Authentication Button
+  const authBtn = document.getElementById('btn-spotify-login');
+  const authText = document.getElementById('spotify-auth-text');
+
+  const updateAuthUI = () => {
+    const token = getAccessToken();
+    const displayName = localStorage.getItem('spotify_user_display_name');
+    if (token) {
+      authBtn.classList.add('connected');
+      authText.textContent = displayName ? `${displayName} (Logout)` : 'Connected (Logout)';
+      authBtn.onclick = () => logoutSpotify();
+    } else {
+      authBtn.classList.remove('connected');
+      authText.textContent = 'Connect Spotify';
+      authBtn.onclick = () => loginWithSpotify();
+    }
+  };
+
+  // Check OAuth callback code on page load
+  checkAuthCallback().then(() => {
+    updateAuthUI();
+  });
+  updateAuthUI();
+
+  // Spotify Album Search
+  setupSpotifySearch();
+
   setupAudioPlayer();
+}
+
+function setupSpotifySearch() {
+  const searchInput = document.getElementById('spotify-search-input');
+  const dropdown = document.getElementById('search-dropdown');
+  let debounceTimeout = null;
+
+  searchInput.addEventListener('input', (e) => {
+    const query = e.target.value.trim();
+    clearTimeout(debounceTimeout);
+
+    if (!query) {
+      dropdown.style.display = 'none';
+      dropdown.innerHTML = '';
+      return;
+    }
+
+    debounceTimeout = setTimeout(async () => {
+      const token = getAccessToken();
+      if (!token) {
+        dropdown.innerHTML = `<div style="padding: 0.75rem; font-size: 0.8125rem; color: #9ca3af; text-align: center;">Click <b>Connect Spotify</b> above to search live albums!</div>`;
+        dropdown.style.display = 'flex';
+        return;
+      }
+
+      const results = await searchSpotifyAlbums(query);
+      if (results.length === 0) {
+        dropdown.innerHTML = `<div style="padding: 0.75rem; font-size: 0.8125rem; color: #9ca3af;">No albums found.</div>`;
+        dropdown.style.display = 'flex';
+        return;
+      }
+
+      dropdown.innerHTML = '';
+      results.forEach((alb) => {
+        const item = document.createElement('div');
+        item.className = 'search-item';
+        const imgUrl = alb.images?.[0]?.url || './public/covers/snatch.png';
+        const artistName = alb.artists?.map(a => a.name).join(', ') || 'Unknown Artist';
+
+        item.innerHTML = `
+          <img src="${imgUrl}" class="search-item-img" alt="${alb.name}">
+          <div class="search-item-info">
+            <span class="search-item-title">${alb.name}</span>
+            <span class="search-item-artist">${artistName} • ${alb.release_date?.slice(0, 4) || ''}</span>
+          </div>
+        `;
+
+        item.addEventListener('click', async () => {
+          dropdown.style.display = 'none';
+          searchInput.value = '';
+
+          // Fetch full album details for tracklist
+          const details = await getSpotifyAlbumDetails(alb.id);
+          const tracks = (details?.tracks?.items || []).map((t, idx) => `${idx + 1}. ${t.name}`);
+
+          const newAlbum = {
+            id: alb.id,
+            title: alb.name,
+            artist: artistName,
+            cover: imgUrl,
+            trackCount: `${alb.total_tracks} Tracks`,
+            year: alb.release_date?.slice(0, 4) || '2026',
+            caseTint: [0.96, 0.98, 1.0],
+            thickness: 0.06,
+            gloss: 0.40,
+            iridescence: 0.13,
+            sampleSong: details?.tracks?.items?.[0]?.name || alb.name,
+            spotifyUri: alb.uri,
+            tracklist: tracks.length > 0 ? tracks : [`1. ${alb.name}`]
+          };
+
+          albums.push(newAlbum);
+          addAlbumThumb(newAlbum, albums.length - 1);
+          loadAlbum(albums.length - 1);
+        });
+
+        dropdown.appendChild(item);
+      });
+
+      dropdown.style.display = 'flex';
+    }, 350);
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+      dropdown.style.display = 'none';
+    }
+  });
 }
 
 function setupAudioPlayer() {
@@ -484,11 +602,19 @@ function setupAudioPlayer() {
   const progressFill = document.getElementById('progress-fill');
   const timeCurrent = document.getElementById('time-current');
 
-  playBtn.addEventListener('click', () => {
+  playBtn.addEventListener('click', async () => {
     isPlaying = !isPlaying;
+    const album = albums[currentAlbumIndex];
+
     if (isPlaying) {
       playIcon.style.display = 'none';
       pauseIcon.style.display = 'block';
+
+      // If connected to Spotify and album has Spotify URI, trigger Spotify playback
+      if (getAccessToken() && album.spotifyUri) {
+        await playSpotifyTrack(null, album.spotifyUri, 0);
+      }
+
       playbackInterval = setInterval(() => {
         currentProgress = (currentProgress + 0.5) % 100;
         progressFill.style.width = `${currentProgress}%`;
@@ -500,19 +626,32 @@ function setupAudioPlayer() {
     } else {
       playIcon.style.display = 'block';
       pauseIcon.style.display = 'none';
+
+      if (getAccessToken()) {
+        await pauseSpotifyPlayback();
+      }
+
       clearInterval(playbackInterval);
     }
   });
 
-  document.getElementById('btn-prev').addEventListener('click', () => {
+  document.getElementById('btn-prev').addEventListener('click', async () => {
+    if (getAccessToken()) {
+      await skipSpotifyPrevious();
+    }
     const prev = (currentAlbumIndex - 1 + albums.length) % albums.length;
     loadAlbum(prev);
   });
-  document.getElementById('btn-next').addEventListener('click', () => {
+
+  document.getElementById('btn-next').addEventListener('click', async () => {
+    if (getAccessToken()) {
+      await skipSpotifyNext();
+    }
     const next = (currentAlbumIndex + 1) % albums.length;
     loadAlbum(next);
   });
 }
+
 
 function addAlbumThumb(album, index) {
   const bar = document.getElementById('album-bar');
