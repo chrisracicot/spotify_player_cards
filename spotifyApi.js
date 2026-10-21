@@ -35,7 +35,7 @@ export async function getSpotifyAlbumDetails(albumId) {
   }
 }
 
-export async function playSpotifyTrack(uri, contextUri = null, offsetPosition = 0) {
+export async function playSpotifyTrack(uri, contextUri = null, offsetPosition = 0, deviceId = null) {
   const token = getAccessToken();
   if (!token) return false;
 
@@ -48,7 +48,8 @@ export async function playSpotifyTrack(uri, contextUri = null, offsetPosition = 
       body.uris = [uri];
     }
 
-    const res = await fetch('https://api.spotify.com/v1/me/player/play', {
+    const query = deviceId ? `?device_id=${deviceId}` : '';
+    const res = await fetch(`https://api.spotify.com/v1/me/player/play${query}`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -56,12 +57,52 @@ export async function playSpotifyTrack(uri, contextUri = null, offsetPosition = 
       },
       body: JSON.stringify(body)
     });
+
+    if (res.status === 404) {
+      // No active device found. Attempt to transfer playback to deviceId if available
+      if (deviceId) {
+        await transferPlaybackToDevice(deviceId);
+        // Retry play
+        await fetch(`https://api.spotify.com/v1/me/player/play${query}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(body)
+        });
+      }
+    }
     return res.ok;
   } catch (err) {
-    console.warn('Spotify play call failed (device might need to be active):', err);
+    console.warn('Spotify play call failed:', err);
     return false;
   }
 }
+
+export async function transferPlaybackToDevice(deviceId) {
+  const token = getAccessToken();
+  if (!token || !deviceId) return false;
+
+  try {
+    const res = await fetch('https://api.spotify.com/v1/me/player', {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        device_ids: [deviceId],
+        play: true
+      })
+    });
+    return res.ok;
+  } catch (e) {
+    console.warn('Failed to transfer playback:', e);
+    return false;
+  }
+}
+
 
 export async function pauseSpotifyPlayback() {
   const token = getAccessToken();

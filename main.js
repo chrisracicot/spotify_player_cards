@@ -2,6 +2,8 @@ import * as THREE from './public/vendor/three.module.js';
 import { FrontLidShader } from './jewelCaseShader.js';
 import { loginWithSpotify, logoutSpotify, checkAuthCallback, getAccessToken } from './spotifyAuth.js';
 import { searchSpotifyAlbums, getSpotifyAlbumDetails, playSpotifyTrack, pauseSpotifyPlayback, skipSpotifyNext, skipSpotifyPrevious } from './spotifyApi.js';
+import { initSpotifySDK, getActiveDeviceId, onPlaybackStateChange } from './spotifyPlayback.js';
+
 
 // Pre-configured albums with tracklists
 const albums = [
@@ -495,10 +497,45 @@ function setupUI() {
   };
 
   // Check OAuth callback code on page load
-  checkAuthCallback().then(() => {
+  checkAuthCallback().then(async (token) => {
     updateAuthUI();
+    if (token) {
+      console.log("Initializing in-browser Spotify Web Playback SDK...");
+      await initSpotifySDK();
+    }
   });
+
+  if (getAccessToken()) {
+    initSpotifySDK();
+  }
+
+  // Sync player UI directly with Spotify Playback state if active
+  onPlaybackStateChange((state) => {
+    if (!state) return;
+    const isPaused = state.paused;
+    const playIcon = document.getElementById('play-icon');
+    const pauseIcon = document.getElementById('pause-icon');
+    const timeCurrent = document.getElementById('time-current');
+    const progressFill = document.getElementById('progress-fill');
+
+    isPlaying = !isPaused;
+    if (playIcon && pauseIcon) {
+      playIcon.style.display = isPlaying ? 'none' : 'block';
+      pauseIcon.style.display = isPlaying ? 'block' : 'none';
+    }
+
+    if (state.position && state.duration) {
+      const pct = (state.position / state.duration) * 100;
+      if (progressFill) progressFill.style.width = `${pct}%`;
+      const curSec = Math.floor(state.position / 1000);
+      const m = Math.floor(curSec / 60);
+      const s = String(curSec % 60).padStart(2, '0');
+      if (timeCurrent) timeCurrent.textContent = `${m}:${s}`;
+    }
+  });
+
   updateAuthUI();
+
 
   // Spotify Album Search
   setupSpotifySearch();
@@ -612,8 +649,10 @@ function setupAudioPlayer() {
 
       // If connected to Spotify and album has Spotify URI, trigger Spotify playback
       if (getAccessToken() && album.spotifyUri) {
-        await playSpotifyTrack(null, album.spotifyUri, 0);
+        const deviceId = getActiveDeviceId();
+        await playSpotifyTrack(null, album.spotifyUri, 0, deviceId);
       }
+
 
       playbackInterval = setInterval(() => {
         currentProgress = (currentProgress + 0.5) % 100;
