@@ -13,7 +13,7 @@ const albums = [
     spotifyUri: 'spotify:album:512dQp7hBb03q4q84bX499',
     title: 'Snatch (Original Soundtrack)',
     artist: 'Various Artists • Oasis, Massive Attack, Madonna',
-    cover: './public/covers/snatch.png',
+    cover: '/covers/snatch.png',
     trackCount: '15 Tracks',
     year: '2000',
     caseTint: [0.96, 0.98, 1.0],
@@ -21,7 +21,7 @@ const albums = [
     gloss: 0.40,          // 40%
     iridescence: 0.13,    // 13%
     sampleSong: 'Diamond - Klint',
-    audioPreview: './public/audio/snatch_preview.wav',
+    audioPreview: '/audio/snatch_preview.wav',
     tracklist: [
       '1. Diamond - Klint',
       '2. Supermoves - Overseer',
@@ -43,7 +43,7 @@ const albums = [
     spotifyUri: 'spotify:album:1btWl43FmKkP2qV1E3U1Wk',
     title: 'Stayin Alive in da Club',
     artist: 'Antifarox x DJ Kuff',
-    cover: './public/covers/stayin_alive.png',
+    cover: '/covers/stayin_alive.png',
     trackCount: 'Single',
     year: '2023',
     caseTint: [0.97, 0.98, 1.0],
@@ -51,7 +51,7 @@ const albums = [
     gloss: 0.40,          // 40%
     iridescence: 0.13,    // 13%
     sampleSong: 'Stayin Alive (Club Mix)',
-    audioPreview: './public/audio/stayin_alive_preview.wav',
+    audioPreview: '/audio/stayin_alive_preview.wav',
     tracklist: [
       '1. Stayin Alive in da Club (Radio Edit)',
       '2. Stayin Alive in da Club (Extended Mix)',
@@ -561,7 +561,7 @@ function setupUI() {
         gloss: 0.40,
         iridescence: 0.13,
         sampleSong: 'Track 01',
-        audioPreview: './public/audio/snatch_preview.wav',
+        audioPreview: '/audio/snatch_preview.wav',
         tracklist: [
           '1. Track 01 - Intro',
           '2. Track 02 - Album Single',
@@ -707,7 +707,7 @@ function setupSpotifySearch() {
             gloss: 0.40,
             iridescence: 0.13,
             sampleSong: details?.tracks?.items?.[0]?.name || alb.name,
-            audioPreview: details?.tracks?.items?.[0]?.preview_url || './public/audio/snatch_preview.wav',
+            audioPreview: details?.tracks?.items?.[0]?.preview_url || '/audio/snatch_preview.wav',
             spotifyUri: alb.uri,
             tracklist: tracks.length > 0 ? tracks : [`1. ${alb.name}`]
           };

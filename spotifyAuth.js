@@ -51,10 +51,12 @@ export async function loginWithSpotify() {
 export function getAccessToken() {
   const token = localStorage.getItem('spotify_access_token');
   const expiresAt = localStorage.getItem('spotify_token_expires_at');
-  if (token && expiresAt && Date.now() < parseInt(expiresAt)) {
-    return token;
+  if (token && expiresAt && Date.now() >= parseInt(expiresAt)) {
+    localStorage.removeItem('spotify_access_token');
+    localStorage.removeItem('spotify_token_expires_at');
+    return null;
   }
-  return token; // return even if expiresAt isn't set
+  return token;
 }
 
 export async function fetchUserProfile(token) {
@@ -62,6 +64,12 @@ export async function fetchUserProfile(token) {
     const res = await fetch("https://api.spotify.com/v1/me", {
       headers: { 'Authorization': `Bearer ${token}` }
     });
+    if (res.status === 401) {
+      // Token expired or revoked
+      localStorage.removeItem('spotify_access_token');
+      localStorage.removeItem('spotify_token_expires_at');
+      return null;
+    }
     if (!res.ok) throw new Error('Failed to fetch profile');
     const profile = await res.json();
     if (profile) {
@@ -73,7 +81,7 @@ export async function fetchUserProfile(token) {
       return profile;
     }
   } catch (err) {
-    console.error("Failed to fetch Spotify user profile:", err);
+    console.warn("Spotify user profile status:", err);
   }
   return null;
 }

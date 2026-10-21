@@ -36,7 +36,9 @@ export function initSpotifySDK() {
         });
 
         player.addListener('authentication_error', ({ message }) => {
-          console.warn('Spotify SDK Auth Error:', message);
+          console.warn('Spotify SDK Auth Error (Token expired or revoked):', message);
+          localStorage.removeItem('spotify_access_token');
+          localStorage.removeItem('spotify_token_expires_at');
         });
 
         player.addListener('account_error', ({ message }) => {
