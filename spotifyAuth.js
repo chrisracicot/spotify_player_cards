@@ -86,6 +86,10 @@ export async function fetchUserProfile(token) {
   return null;
 }
 
+export function getUserProduct() {
+  return localStorage.getItem('spotify_user_product') || 'free';
+}
+
 export function logoutSpotify() {
   localStorage.removeItem('spotify_access_token');
   localStorage.removeItem('spotify_token_expires_at');

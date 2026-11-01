@@ -1,7 +1,19 @@
 import * as THREE from './public/vendor/three.module.js';
 import { FrontLidShader } from './jewelCaseShader.js';
-import { loginWithSpotify, logoutSpotify, checkAuthCallback, getAccessToken } from './spotifyAuth.js';
-import { searchSpotifyAlbums, getSpotifyAlbumDetails, playSpotifyTrack, pauseSpotifyPlayback, skipSpotifyNext, skipSpotifyPrevious } from './spotifyApi.js';
+import { loginWithSpotify, logoutSpotify, checkAuthCallback, getAccessToken, getUserProduct } from './spotifyAuth.js';
+import { 
+  searchSpotifyAlbums, 
+  getSpotifyAlbumDetails, 
+  playSpotifyTrack, 
+  pauseSpotifyPlayback, 
+  skipSpotifyNext, 
+  skipSpotifyPrevious,
+  addTrackToSpotifyQueue,
+  getSpotifyQueue,
+  getPlaybackState,
+  setVolumeRemote,
+  seekPlaybackRemote
+} from './spotifyApi.js';
 import { initSpotifySDK, getActiveDeviceId, onPlaybackStateChange } from './spotifyPlayback.js';
 
 // Pre-configured albums with tracklists forming a full 360-degree carousel
@@ -209,6 +221,10 @@ let sharedBackMat = null;
 const previewAudio = new Audio();
 previewAudio.volume = 0.8;
 let spotifyEmbedController = null;
+
+// Playlist Queue State (Adapted from algorithm_web)
+const playlistQueue = [];
+let isQueuePolling = false;
 
 // Spotify IFrame API Callback
 window.onSpotifyIframeApiReady = (IFrameAPI) => {
@@ -823,6 +839,154 @@ function setupUI() {
   updateAuthUI();
   setupSpotifySearch();
   setupAudioPlayer();
+  renderQueueUI();
+  startSpotifyQueuePolling();
+
+  // Clear queue button listener
+  const clearQueueBtn = document.getElementById('btn-clear-queue');
+  if (clearQueueBtn) {
+    clearQueueBtn.addEventListener('click', () => {
+      playlistQueue.length = 0;
+      renderQueueUI();
+    });
+  }
+}
+
+// Queue Management Functions (Copied & adapted from algorithm_web)
+export async function enqueueTrack(track) {
+  const isPremium = getUserProduct() === 'premium';
+  const token = getAccessToken();
+  const deviceId = getActiveDeviceId();
+
+  if (token && isPremium && track.spotifyUri) {
+    // Add directly to Spotify's live remote queue
+    const success = await addTrackToSpotifyQueue(track.spotifyUri, deviceId);
+    if (success) {
+      console.log(`✅ Track added to Spotify remote queue: ${track.title}`);
+    }
+  }
+
+  // Always keep in local playlist queue UI as well
+  playlistQueue.push(track);
+  renderQueueUI();
+
+  // If nothing is playing, play immediately
+  if (!isPlaying) {
+    playNextQueueTrack();
+  }
+}
+
+export function playNextQueueTrack() {
+  if (playlistQueue.length === 0) return;
+  const nextTrack = playlistQueue.shift();
+  renderQueueUI();
+  playTrackItem(nextTrack);
+}
+
+export async function playTrackItem(track) {
+  const isPremium = getUserProduct() === 'premium';
+  const token = getAccessToken();
+  const deviceId = getActiveDeviceId();
+
+  // If this track belongs to one of our carousel albums, spin the carousel to match!
+  if (track.albumIndex !== undefined && track.albumIndex >= 0 && track.albumIndex < albums.length) {
+    rotateToAlbum(track.albumIndex);
+  }
+
+  // 1. If Spotify Web Playback SDK / Premium is active
+  if (token && isPremium && track.spotifyUri) {
+    await playSpotifyTrack(track.spotifyUri, null, 0, deviceId);
+    setPlayUI(true);
+    return;
+  }
+
+  // 2. Fallback to Spotify Embed controller
+  if (spotifyEmbedController && track.spotifyUri) {
+    spotifyEmbedController.loadUri(track.spotifyUri);
+    spotifyEmbedController.play();
+    setPlayUI(true);
+    return;
+  }
+
+  // 3. Fallback to local audio preview
+  if (track.audioPreview) {
+    const targetUrl = new URL(track.audioPreview, window.location.href).href;
+    if (previewAudio.src !== targetUrl) {
+      previewAudio.src = track.audioPreview;
+    }
+    previewAudio.play().then(() => setPlayUI(true)).catch(e => console.warn(e));
+  }
+}
+
+function renderQueueUI() {
+  const queueContainer = document.getElementById('queue-list');
+  if (!queueContainer) return;
+
+  queueContainer.innerHTML = '';
+
+  if (playlistQueue.length === 0) {
+    queueContainer.innerHTML = '<div class="queue-empty">Queue is empty. Search songs or click "Add to Queue" below!</div>';
+    return;
+  }
+
+  playlistQueue.forEach((track, index) => {
+    const item = document.createElement('div');
+    item.className = 'queue-item';
+    item.title = `Click to play: ${track.title}`;
+
+    const coverSrc = track.cover || '/covers/snatch.png';
+    item.innerHTML = `
+      <img src="${coverSrc}" alt="${track.title}">
+      <div class="queue-item-details">
+        <span class="queue-item-title">${track.title}</span>
+        <span class="queue-item-artist">${track.artist || 'Unknown Artist'}</span>
+      </div>
+      <div class="queue-item-action">▶</div>
+    `;
+
+    item.addEventListener('click', () => {
+      playlistQueue.splice(index, 1);
+      renderQueueUI();
+      playTrackItem(track);
+    });
+
+    queueContainer.appendChild(item);
+  });
+}
+
+// Background sync to poll real Spotify queue for Premium users (from algorithm_web)
+function startSpotifyQueuePolling() {
+  if (isQueuePolling) return;
+  isQueuePolling = true;
+
+  setInterval(async () => {
+    const token = getAccessToken();
+    const isPremium = getUserProduct() === 'premium';
+    if (!token || !isPremium) return;
+
+    try {
+      const queueData = await getSpotifyQueue();
+      if (queueData && queueData.queue && queueData.queue.length > 0) {
+        // Sync remote Spotify queue tracks into our local queue representation
+        const remoteQueue = queueData.queue.slice(0, 8).map(q => ({
+          title: q.name,
+          artist: q.artists.map(a => a.name).join(', '),
+          cover: q.album?.images?.[0]?.url || '/covers/snatch.png',
+          spotifyUri: q.uri
+        }));
+        
+        // Merge without duplicate URIs
+        remoteQueue.forEach(rq => {
+          if (!playlistQueue.some(lq => lq.spotifyUri === rq.spotifyUri)) {
+            playlistQueue.push(rq);
+          }
+        });
+        renderQueueUI();
+      }
+    } catch (err) {
+      console.warn("Queue polling note:", err);
+    }
+  }, 5000);
 }
 
 function setupSpotifySearch() {
@@ -868,7 +1032,26 @@ function setupSpotifySearch() {
             <span class="search-item-title">${alb.name}</span>
             <span class="search-item-artist">${artistName} • ${alb.release_date?.slice(0, 4) || ''}</span>
           </div>
+          <div class="search-item-actions">
+            <button class="queue-add-btn" title="Add first track to queue">+ Queue</button>
+          </div>
         `;
+
+        // Queue button click
+        const queueBtn = item.querySelector('.queue-add-btn');
+        queueBtn.addEventListener('click', async (evt) => {
+          evt.stopPropagation();
+          dropdown.style.display = 'none';
+          const details = await getSpotifyAlbumDetails(alb.id);
+          const firstTrack = details?.tracks?.items?.[0];
+          enqueueTrack({
+            title: firstTrack?.name || alb.name,
+            artist: artistName,
+            cover: imgUrl,
+            spotifyUri: firstTrack?.uri || alb.uri,
+            audioPreview: firstTrack?.preview_url
+          });
+        });
 
         item.addEventListener('click', async () => {
           dropdown.style.display = 'none';
@@ -928,6 +1111,10 @@ function setupAudioPlayer() {
   previewAudio.addEventListener('ended', () => {
     setPlayUI(false);
     updateProgress(0, previewAudio.duration || 25);
+    // If tracks are in queue, automatically advance to next queued track
+    if (playlistQueue.length > 0) {
+      playNextQueueTrack();
+    }
   });
 
   previewAudio.addEventListener('play', () => {
@@ -1010,7 +1197,7 @@ function setupAudioPlayer() {
     }
   });
 
-  // Previous & Next buttons in the player smoothly spin the carousel
+  // Previous & Next buttons in the player smoothly spin the carousel or advance queue
   document.getElementById('btn-prev').addEventListener('click', async () => {
     if (getAccessToken()) {
       await skipSpotifyPrevious();
@@ -1020,6 +1207,10 @@ function setupAudioPlayer() {
   });
 
   document.getElementById('btn-next').addEventListener('click', async () => {
+    if (playlistQueue.length > 0) {
+      playNextQueueTrack();
+      return;
+    }
     if (getAccessToken()) {
       await skipSpotifyNext();
     }

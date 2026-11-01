@@ -168,3 +168,89 @@ export async function getMySavedAlbums() {
     return [];
   }
 }
+
+// Queue & Playback API methods copied from algorithm_web
+export async function addTrackToSpotifyQueue(uriOrTrackId, deviceId = null) {
+  const token = getAccessToken();
+  if (!token) return false;
+
+  const uri = uriOrTrackId.startsWith('spotify:track:') ? uriOrTrackId : `spotify:track:${uriOrTrackId}`;
+  const deviceParam = deviceId ? `&device_id=${deviceId}` : '';
+
+  try {
+    const res = await fetch(`https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(uri)}${deviceParam}`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return res.ok || res.status === 204;
+  } catch (err) {
+    console.warn('Failed to add track to Spotify queue:', err);
+    return false;
+  }
+}
+
+export async function getSpotifyQueue() {
+  const token = getAccessToken();
+  if (!token) return null;
+
+  try {
+    const res = await fetch('https://api.spotify.com/v1/me/player/queue', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.warn('Failed to get Spotify queue:', err);
+    return null;
+  }
+}
+
+export async function getPlaybackState() {
+  const token = getAccessToken();
+  if (!token) return null;
+
+  try {
+    const res = await fetch('https://api.spotify.com/v1/me/player', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.status === 204 || !res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.warn('Failed to get Spotify playback state:', err);
+    return null;
+  }
+}
+
+export async function setVolumeRemote(volumePercent, deviceId = null) {
+  const token = getAccessToken();
+  if (!token) return false;
+
+  const deviceParam = deviceId ? `?device_id=${deviceId}` : '';
+  try {
+    const res = await fetch(`https://api.spotify.com/v1/me/player/volume?volume_percent=${volumePercent}${deviceParam}`, {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn('Failed to set volume:', err);
+    return false;
+  }
+}
+
+export async function seekPlaybackRemote(positionMs, deviceId = null) {
+  const token = getAccessToken();
+  if (!token) return false;
+
+  const deviceParam = deviceId ? `?device_id=${deviceId}` : '';
+  try {
+    const res = await fetch(`https://api.spotify.com/v1/me/player/seek?position_ms=${positionMs}${deviceParam}`, {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn('Failed to seek playback:', err);
+    return false;
+  }
+}
