@@ -4,8 +4,7 @@ import { loginWithSpotify, logoutSpotify, checkAuthCallback, getAccessToken } fr
 import { searchSpotifyAlbums, getSpotifyAlbumDetails, playSpotifyTrack, pauseSpotifyPlayback, skipSpotifyNext, skipSpotifyPrevious } from './spotifyApi.js';
 import { initSpotifySDK, getActiveDeviceId, onPlaybackStateChange } from './spotifyPlayback.js';
 
-
-// Pre-configured albums with tracklists
+// Pre-configured albums with tracklists forming a full 360-degree carousel
 const albums = [
   {
     id: 'snatch',
@@ -17,9 +16,9 @@ const albums = [
     trackCount: '15 Tracks',
     year: '2000',
     caseTint: [0.96, 0.98, 1.0],
-    thickness: 0.06,      // 6%
-    gloss: 0.40,          // 40%
-    iridescence: 0.13,    // 13%
+    thickness: 0.06,
+    gloss: 0.40,
+    iridescence: 0.13,
     sampleSong: 'Diamond - Klint',
     audioPreview: '/audio/snatch_preview.wav',
     tracklist: [
@@ -47,9 +46,9 @@ const albums = [
     trackCount: 'Single',
     year: '2023',
     caseTint: [0.97, 0.98, 1.0],
-    thickness: 0.06,      // 6%
-    gloss: 0.40,          // 40%
-    iridescence: 0.13,    // 13%
+    thickness: 0.06,
+    gloss: 0.40,
+    iridescence: 0.13,
     sampleSong: 'Stayin Alive (Club Mix)',
     audioPreview: '/audio/stayin_alive_preview.wav',
     tracklist: [
@@ -58,20 +57,153 @@ const albums = [
       '3. Stayin Alive in da Club (Dub Instrumental)',
       '4. Stayin Alive in da Club (VIP Bass Rework)'
     ]
+  },
+  {
+    id: 'ram',
+    spotifyId: '4m2880jivSbbyEGAKfITCa',
+    spotifyUri: 'spotify:album:4m2880jivSbbyEGAKfITCa',
+    title: 'Random Access Memories',
+    artist: 'Daft Punk',
+    cover: '/covers/ram.png',
+    trackCount: '13 Tracks',
+    year: '2013',
+    caseTint: [0.95, 0.98, 1.0],
+    thickness: 0.06,
+    gloss: 0.45,
+    iridescence: 0.18,
+    sampleSong: 'Get Lucky (feat. Pharrell Williams)',
+    audioPreview: '/audio/snatch_preview.wav',
+    tracklist: [
+      '1. Give Life Back to Music',
+      '2. Giorgio by Moroder',
+      '3. Within',
+      '4. Instant Crush (feat. Julian Casablancas)',
+      '5. Lose Yourself to Dance',
+      '6. Touch (feat. Paul Williams)',
+      '7. Get Lucky (feat. Pharrell Williams)',
+      '8. Beyond',
+      '9. Motherboard',
+      '10. Fragments of Time',
+      '11. Doin\' It Right (feat. Panda Bear)',
+      '12. Contact'
+    ]
+  },
+  {
+    id: 'dark_side',
+    spotifyId: '4LH4d3cOWNNXdsqFd4O7ja',
+    spotifyUri: 'spotify:album:4LH4d3cOWNNXdsqFd4O7ja',
+    title: 'The Dark Side of the Moon',
+    artist: 'Pink Floyd',
+    cover: '/covers/dark_side.png',
+    trackCount: '10 Tracks',
+    year: '1973',
+    caseTint: [0.94, 0.96, 1.0],
+    thickness: 0.06,
+    gloss: 0.38,
+    iridescence: 0.22,
+    sampleSong: 'Time',
+    audioPreview: '/audio/snatch_preview.wav',
+    tracklist: [
+      '1. Speak to Me',
+      '2. Breathe (In the Air)',
+      '3. On the Run',
+      '4. Time',
+      '5. The Great Gig in the Sky',
+      '6. Money',
+      '7. Us and Them',
+      '8. Any Colour You Like',
+      '9. Brain Damage',
+      '10. Eclipse'
+    ]
+  },
+  {
+    id: 'currents',
+    spotifyId: '79dL7FLiJFOO0EoehUHQBv',
+    spotifyUri: 'spotify:album:79dL7FLiJFOO0EoehUHQBv',
+    title: 'Currents',
+    artist: 'Tame Impala',
+    cover: '/covers/currents.png',
+    trackCount: '13 Tracks',
+    year: '2015',
+    caseTint: [0.98, 0.95, 1.0],
+    thickness: 0.06,
+    gloss: 0.42,
+    iridescence: 0.16,
+    sampleSong: 'The Less I Know the Better',
+    audioPreview: '/audio/stayin_alive_preview.wav',
+    tracklist: [
+      '1. Let It Happen',
+      '2. Nangs',
+      '3. The Moment',
+      '4. Yes I\'m Changing',
+      '5. Eventually',
+      '6. Gossip',
+      '7. The Less I Know the Better',
+      '8. Past Life',
+      '9. Disciples',
+      '10. Cause I\'m a Man',
+      '11. Reality in Motion',
+      '12. Love/Paranoia',
+      '13. New Person, Same Old Mistakes'
+    ]
+  },
+  {
+    id: 'discovery',
+    spotifyId: '2noRn2Aes5aoNVsU6iWThc',
+    spotifyUri: 'spotify:album:2noRn2Aes5aoNVsU6iWThc',
+    title: 'Discovery',
+    artist: 'Daft Punk',
+    cover: '/covers/discovery.png',
+    trackCount: '14 Tracks',
+    year: '2001',
+    caseTint: [0.96, 0.98, 1.0],
+    thickness: 0.06,
+    gloss: 0.44,
+    iridescence: 0.15,
+    sampleSong: 'One More Time',
+    audioPreview: '/audio/stayin_alive_preview.wav',
+    tracklist: [
+      '1. One More Time',
+      '2. Aerodynamic',
+      '3. Digital Love',
+      '4. Harder, Better, Faster, Stronger',
+      '5. Crescendolls',
+      '6. Nightvision',
+      '7. Superheroes',
+      '8. High Life',
+      '9. Something About Us',
+      '10. Voyager',
+      '11. Veridis Quo',
+      '12. Short Circuit',
+      '13. Face to Face',
+      '14. Too Long'
+    ]
   }
 ];
 
-
 let currentAlbumIndex = 0;
 let scene, camera, renderer, textureLoader;
-let caseGroup, frontLidGroup, backTrayGroup, tracklistMesh;
+let carouselGroup;
+const caseInstances = [];
+const raycaster = new THREE.Raycaster();
+
+// Interaction & Physics state
 let isDragging = false;
 let previousPointerPosition = { x: 0, y: 0 };
 let pointerDownPosition = { x: 0, y: 0 };
-let targetRotation = { x: 0.10, y: -0.35 };
-let currentRotation = { x: 0.10, y: -0.35 };
-let autoRotate = false;
+let targetCarouselRotationY = 0;
+let currentCarouselRotationY = 0;
+let targetCarouselTiltX = 0.04; // subtle resting forward perspective
+let currentCarouselTiltX = 0.04;
+let spinVelocity = 0;
 let isPlaying = false;
+
+// Shared Geometries & Materials for efficiency
+let sharedBoxGeom = null;
+let sharedPaperGeom = null;
+let sharedSpineGeom = null;
+let sharedSpineMat = null;
+let sharedBackMat = null;
 
 // Audio Preview Engine (guarantees audible sound in all browsers)
 const previewAudio = new Audio();
@@ -96,7 +228,6 @@ window.onSpotifyIframeApiReady = (IFrameAPI) => {
     controller.addListener('playback_update', (e) => {
       if (e.data) {
         if (!e.data.isPaused) {
-          // Spotify embed started playback, pause local audio preview to avoid conflict
           if (!previewAudio.paused) {
             previewAudio.pause();
           }
@@ -111,11 +242,6 @@ window.onSpotifyIframeApiReady = (IFrameAPI) => {
     });
   });
 };
-
-// Case Open/Close State
-let isOpen = false;
-let targetOpenAngle = 0; // 0 = closed, ~2.5 rad (~145 deg) = open
-let currentOpenAngle = 0;
 
 // Geometry generators
 function createBoxGeometryWithUVs(width, height, depth, radius = 0.02) {
@@ -204,7 +330,7 @@ function createTracklistTexture(album) {
   // Album Title & Header
   ctx.fillStyle = '#111827';
   ctx.font = 'bold 44px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillText(album.title, 130, 130);
+  ctx.fillText(album.title.length > 28 ? album.title.slice(0, 26) + '...' : album.title, 130, 130);
 
   ctx.fillStyle = '#6b7280';
   ctx.font = '500 28px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
@@ -227,7 +353,7 @@ function createTracklistTexture(album) {
   ctx.fillStyle = '#1f2937';
   ctx.font = '26px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   let y = 310;
-  album.tracklist.forEach((track) => {
+  (album.tracklist || []).slice(0, 12).forEach((track) => {
     ctx.fillText(track, 130, y);
     y += 48;
   });
@@ -249,7 +375,7 @@ function init() {
   scene = new THREE.Scene();
 
   camera = new THREE.PerspectiveCamera(40, container.clientWidth / container.clientHeight, 0.1, 100);
-  camera.position.set(0, 0, 6.4);
+  camera.position.set(0, 0.35, 7.8);
 
   renderer = new THREE.WebGLRenderer({
     canvas: canvas,
@@ -275,88 +401,87 @@ function init() {
   backLight.position.set(0, 3, -4);
   scene.add(backLight);
 
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
   scene.add(ambientLight);
 
   textureLoader = new THREE.TextureLoader();
 
-  // Root case container
-  caseGroup = new THREE.Group();
-  scene.add(caseGroup);
-
-  // Build the complete CD Jewel Case assembly
-  buildJewelCaseAssembly();
-
-  // Interaction & UI
-  setupInteraction(canvas);
-  setupUI();
-  window.addEventListener('resize', onWindowResize);
-
-  loadAlbum(0);
-  animate();
-}
-
-function buildJewelCaseAssembly() {
-  // Clear previous meshes
-  while (caseGroup.children.length > 0) {
-    caseGroup.remove(caseGroup.children[0]);
-  }
-
-  const album = albums[currentAlbumIndex];
+  // Initialize shared geometries
   const caseWidth = 3.0;
   const caseHeight = 3.0;
-  const halfDepth = 0.08; // half thickness for each shell (front & back)
+  const halfDepth = 0.08;
   const spineWidth = 0.22;
 
-  // 1. Black Spine / Pivot Bar on the left
-  // Dimensions: tall as case, depth of both shells combined, distinct black molded plastic
-  const spineGeom = new THREE.BoxGeometry(spineWidth, caseHeight + 0.02, halfDepth * 2 + 0.03);
-  const spineMat = new THREE.MeshStandardMaterial({
-    color: 0x141416, // Matte deep black molded plastic
+  sharedBoxGeom = createBoxGeometryWithUVs(caseWidth, caseHeight, halfDepth, 0.02);
+  sharedPaperGeom = new THREE.PlaneGeometry(caseWidth - 0.08, caseHeight - 0.08);
+  sharedSpineGeom = new THREE.BoxGeometry(spineWidth, caseHeight + 0.02, halfDepth * 2 + 0.03);
+
+  sharedSpineMat = new THREE.MeshStandardMaterial({
+    color: 0x141416,
     roughness: 0.55,
     metalness: 0.05
   });
-  const spineMesh = new THREE.Mesh(spineGeom, spineMat);
-  // Positioned along the left hinge axis
-  spineMesh.position.set(-caseWidth / 2 - spineWidth / 2 + 0.06, 0, 0);
-  caseGroup.add(spineMesh);
 
-  // 2. Back Tray Group (Stationary base when opening)
-  backTrayGroup = new THREE.Group();
-  caseGroup.add(backTrayGroup);
-
-  // Back tray clear plastic shell
-  const backGeom = createBoxGeometryWithUVs(caseWidth, caseHeight, halfDepth, 0.02);
-  const backPlasticMat = new THREE.MeshStandardMaterial({
+  sharedBackMat = new THREE.MeshStandardMaterial({
     color: 0x222428,
     roughness: 0.35,
     metalness: 0.1,
     transparent: true,
     opacity: 0.95
   });
-  const backShell = new THREE.Mesh(backGeom, backPlasticMat);
+
+  // Carousel Group container
+  carouselGroup = new THREE.Group();
+  scene.add(carouselGroup);
+
+  // Build the carousel ring with CD case instances
+  buildCarousel();
+
+  // Interaction & UI
+  setupInteraction(canvas);
+  setupUI();
+  window.addEventListener('resize', onWindowResize);
+
+  syncActiveAlbum(0);
+  animate();
+}
+
+// Factory to create a single complete 3D CD Jewel Case instance
+function createCDCaseInstance(album, index) {
+  const caseMeshGroup = new THREE.Group();
+  caseMeshGroup.userData = { albumIndex: index };
+
+  const caseWidth = 3.0;
+  const halfDepth = 0.08;
+  const spineWidth = 0.22;
+
+  // 1. Black Spine hinge bar on left
+  const spineMesh = new THREE.Mesh(sharedSpineGeom, sharedSpineMat);
+  spineMesh.position.set(-caseWidth / 2 - spineWidth / 2 + 0.06, 0, 0);
+  caseMeshGroup.add(spineMesh);
+
+  // 2. Back Tray Group
+  const backTrayGroup = new THREE.Group();
+  caseMeshGroup.add(backTrayGroup);
+
+  const backShell = new THREE.Mesh(sharedBoxGeom, sharedBackMat);
   backShell.position.set(0, 0, -halfDepth / 2);
   backTrayGroup.add(backShell);
 
-  // Matte Paper Tracklist Insert placed inside the back tray
-  const paperGeom = new THREE.PlaneGeometry(caseWidth - 0.08, caseHeight - 0.08);
   const paperMat = new THREE.MeshBasicMaterial({
     map: createTracklistTexture(album),
     side: THREE.FrontSide
   });
-  tracklistMesh = new THREE.Mesh(paperGeom, paperMat);
-  tracklistMesh.position.set(0, 0, 0.005); // Sitting right on the inside floor of the tray
+  const tracklistMesh = new THREE.Mesh(sharedPaperGeom, paperMat);
+  tracklistMesh.position.set(0, 0, 0.005);
   backTrayGroup.add(tracklistMesh);
 
-  // 3. Front Lid Group (Hinged at the left edge: x = -caseWidth / 2)
-  // Pivot placed at the left hinge line so rotation around Y opens the case cleanly!
-  frontLidGroup = new THREE.Group();
+  // 3. Front Lid Group (Closed, locked as requested)
+  const frontLidGroup = new THREE.Group();
   const hingeX = -caseWidth / 2 + 0.04;
   frontLidGroup.position.set(hingeX, 0, halfDepth / 2);
-  caseGroup.add(frontLidGroup);
+  caseMeshGroup.add(frontLidGroup);
 
-  // Lid mesh offset relative to the hinge pivot
-  const lidGeom = createBoxGeometryWithUVs(caseWidth, caseHeight, halfDepth, 0.02);
   const lidShaderMat = new THREE.ShaderMaterial({
     uniforms: THREE.UniformsUtils.clone(FrontLidShader.uniforms),
     vertexShader: FrontLidShader.vertexShader,
@@ -366,10 +491,107 @@ function buildJewelCaseAssembly() {
   lidShaderMat.uniforms.uPlasticIridescence.value = album.iridescence;
   lidShaderMat.uniforms.uCaseTint.value = new THREE.Color(...album.caseTint);
 
-  const lidMesh = new THREE.Mesh(lidGeom, lidShaderMat);
+  const lidMesh = new THREE.Mesh(sharedBoxGeom, lidShaderMat);
   lidMesh.name = 'frontLidMesh';
-  lidMesh.position.set(caseWidth / 2 - 0.04, 0, 0); // Center relative to hinge
+  lidMesh.position.set(caseWidth / 2 - 0.04, 0, 0);
   frontLidGroup.add(lidMesh);
+
+  // Load cover texture asynchronously
+  textureLoader.load(album.cover, (tex) => {
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.minFilter = THREE.LinearMipMapLinearFilter;
+    tex.generateMipmaps = true;
+    lidShaderMat.uniforms.tCover.value = tex;
+  });
+
+  return caseMeshGroup;
+}
+
+// Build or rebuild the cylindrical carousel ring of CD cases
+function buildCarousel() {
+  while (carouselGroup.children.length > 0) {
+    carouselGroup.remove(carouselGroup.children[0]);
+  }
+  caseInstances.length = 0;
+
+  const N = albums.length;
+  const deltaTheta = (2 * Math.PI) / N;
+  const caseWidth = 3.0;
+
+  // Dynamic radius based on item count to avoid clipping and keep natural spacing
+  const radius = Math.max(4.2, (caseWidth * 1.25) / (2 * Math.sin(Math.PI / Math.max(N, 3))));
+
+  for (let i = 0; i < N; i++) {
+    const caseInstance = createCDCaseInstance(albums[i], i);
+    const angle = i * deltaTheta;
+
+    // Position around cylindrical ring
+    caseInstance.position.set(
+      radius * Math.sin(angle),
+      0,
+      radius * Math.cos(angle)
+    );
+
+    // Orient case radially outward
+    caseInstance.rotation.y = angle;
+
+    carouselGroup.add(caseInstance);
+    caseInstances.push(caseInstance);
+  }
+
+  // Anchor carousel so the active front case (angle = 0) sits comfortably at Z = 0
+  carouselGroup.position.set(0, -0.05, -radius);
+}
+
+// Smoothly rotate the carousel ring to bring a specific album to the front
+function rotateToAlbum(targetIndex) {
+  const N = albums.length;
+  const deltaTheta = (2 * Math.PI) / N;
+  const targetAngle = -targetIndex * deltaTheta;
+
+  // Shortest angular path
+  const diff = (targetAngle - targetCarouselRotationY) % (2 * Math.PI);
+  const shortestDiff = ((diff + 3 * Math.PI) % (2 * Math.PI)) - Math.PI;
+
+  targetCarouselRotationY += shortestDiff;
+  spinVelocity = 0;
+  syncActiveAlbum(targetIndex);
+}
+
+function syncActiveAlbum(index) {
+  currentAlbumIndex = index;
+  const album = albums[index];
+  if (!album) return;
+
+  // Sync Spotify Embed Controller if active
+  if (spotifyEmbedController && album.spotifyUri) {
+    try {
+      spotifyEmbedController.loadUri(album.spotifyUri);
+    } catch (e) {
+      console.warn("Spotify Embed loadUri notice:", e);
+    }
+  }
+
+  // If local preview audio is currently playing, update source and continue
+  if (isPlaying && album.audioPreview) {
+    const targetUrl = new URL(album.audioPreview, window.location.href).href;
+    if (previewAudio.src !== targetUrl) {
+      previewAudio.src = album.audioPreview;
+      previewAudio.play().catch(e => console.warn(e));
+    }
+  }
+
+  // Update Sidebar UI elements
+  document.getElementById('track-title').textContent = album.title;
+  document.getElementById('track-artist').textContent = album.artist;
+  document.getElementById('track-badge').textContent = `${album.trackCount} • ${album.year}`;
+  document.getElementById('track-cover-mini').src = album.cover;
+  document.getElementById('now-playing-sample').textContent = album.sampleSong;
+
+  // Highlight active thumbnail button
+  document.querySelectorAll('.album-thumb-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', i === index);
+  });
 }
 
 function setPlayUI(playing) {
@@ -407,91 +629,20 @@ function updateProgress(currentTimeSec, durationSec) {
   }
 }
 
-function loadAlbum(index) {
-  currentAlbumIndex = index;
-  const album = albums[index];
-
-  // Reset Audio
-  previewAudio.pause();
-  setPlayUI(false);
-  previewAudio.currentTime = 0;
-  if (album.audioPreview) {
-    previewAudio.src = album.audioPreview;
-    previewAudio.load();
-  }
-  updateProgress(0, 25);
-
-  // Sync Spotify Embed Controller if initialized
-  if (spotifyEmbedController && album.spotifyUri) {
-    try {
-      spotifyEmbedController.loadUri(album.spotifyUri);
-    } catch (e) {
-      console.warn("Spotify Embed loadUri notice:", e);
-    }
-  }
-
-  // Load front album cover
-  textureLoader.load(album.cover, (tex) => {
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.minFilter = THREE.LinearMipMapLinearFilter;
-    tex.generateMipmaps = true;
-
-    const lidMesh = frontLidGroup.getObjectByName('frontLidMesh');
-    if (lidMesh && lidMesh.material.uniforms) {
-      lidMesh.material.uniforms.tCover.value = tex;
-      lidMesh.material.uniforms.uPlasticGloss.value = album.gloss;
-      lidMesh.material.uniforms.uPlasticIridescence.value = album.iridescence;
-      lidMesh.material.uniforms.uCaseTint.value = new THREE.Color(...album.caseTint);
-    }
-  });
-
-  // Update inside tracklist paper
-  if (tracklistMesh) {
-    if (tracklistMesh.material.map) {
-      tracklistMesh.material.map.dispose();
-    }
-    tracklistMesh.material.map = createTracklistTexture(album);
-    tracklistMesh.material.needsUpdate = true;
-  }
-
-  // Update UI Elements
-  document.getElementById('track-title').textContent = album.title;
-  document.getElementById('track-artist').textContent = album.artist;
-  document.getElementById('track-badge').textContent = `${album.trackCount} • ${album.year}`;
-  document.getElementById('track-cover-mini').src = album.cover;
-  document.getElementById('now-playing-sample').textContent = album.sampleSong;
-
-  // Highlight active thumb
-  document.querySelectorAll('.album-thumb-btn').forEach((btn, i) => {
-    btn.classList.toggle('active', i === index);
-  });
-}
-
-function toggleCaseOpen() {
-  isOpen = !isOpen;
-  // Open 145 degrees (~2.53 radians) to fully display tracklist booklet and lid
-  targetOpenAngle = isOpen ? -2.53 : 0.0;
-
-  const hintText = document.getElementById('hint-text');
-  if (hintText) {
-    hintText.textContent = isOpen ? 'Click case to close • Drag to rotate in 3D' : 'Click case to open • Drag to rotate in 3D';
-  }
-}
-
 function setupInteraction(canvas) {
-  let isPointerDown = false;
   let hasMoved = false;
 
   canvas.addEventListener('pointerdown', (e) => {
-    isPointerDown = true;
+    isDragging = true;
     hasMoved = false;
     previousPointerPosition = { x: e.clientX, y: e.clientY };
     pointerDownPosition = { x: e.clientX, y: e.clientY };
+    spinVelocity = 0;
     canvas.setPointerCapture(e.pointerId);
   });
 
   canvas.addEventListener('pointermove', (e) => {
-    if (!isPointerDown) return;
+    if (!isDragging) return;
 
     const deltaX = e.clientX - previousPointerPosition.x;
     const deltaY = e.clientY - previousPointerPosition.y;
@@ -500,43 +651,79 @@ function setupInteraction(canvas) {
       hasMoved = true;
     }
 
-    targetRotation.y += deltaX * 0.008;
-    targetRotation.x += deltaY * 0.008;
+    // Horizontal spin with cursor
+    targetCarouselRotationY += deltaX * 0.007;
+    spinVelocity = deltaX * 0.007;
 
-    // Maximize vertical tilt strictly to 20 degrees (±20° = ±0.349 rad)
-    const maxVerticalTilt = (20 * Math.PI) / 180;
-    targetRotation.x = Math.max(-maxVerticalTilt, Math.min(maxVerticalTilt, targetRotation.x));
+    // Very slight vertical tilt (user requested)
+    targetCarouselTiltX += deltaY * 0.003;
+    const maxVerticalTilt = (10 * Math.PI) / 180; // ±10 degrees
+    targetCarouselTiltX = Math.max(-maxVerticalTilt, Math.min(maxVerticalTilt, targetCarouselTiltX));
 
     previousPointerPosition = { x: e.clientX, y: e.clientY };
   });
 
   const endDrag = (e) => {
-    if (!isPointerDown) return;
-    isPointerDown = false;
+    if (!isDragging) return;
+    isDragging = false;
     try {
       canvas.releasePointerCapture(e.pointerId);
     } catch (err) {}
 
-    // If it was a clean click without dragging, toggle Open / Close!
+    // If clean click without dragging: raycast to see if user clicked a specific CD case!
     if (!hasMoved) {
-      toggleCaseOpen();
+      const rect = canvas.getBoundingClientRect();
+      const mouse = new THREE.Vector2(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1
+      );
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(carouselGroup.children, true);
+
+      if (intersects.length > 0) {
+        let obj = intersects[0].object;
+        while (obj.parent && obj.parent !== carouselGroup) {
+          obj = obj.parent;
+        }
+        if (obj.userData && typeof obj.userData.albumIndex === 'number') {
+          rotateToAlbum(obj.userData.albumIndex);
+        }
+      }
     }
   };
 
   canvas.addEventListener('pointerup', endDrag);
   canvas.addEventListener('pointercancel', endDrag);
 
-  // Wheel zoom
+  // Subtle wheel zoom
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
     camera.position.z += e.deltaY * 0.003;
-    camera.position.z = Math.max(3.5, Math.min(10.0, camera.position.z));
+    camera.position.z = Math.max(6.0, Math.min(10.5, camera.position.z));
   }, { passive: false });
 }
 
+function renderThumbnails() {
+  const bar = document.getElementById('album-bar');
+  const uploadBtn = document.getElementById('btn-upload');
+  if (!bar || !uploadBtn) return;
+
+  // Remove existing thumb buttons
+  bar.querySelectorAll('.album-thumb-btn').forEach(b => b.remove());
+
+  albums.forEach((album, index) => {
+    const btn = document.createElement('button');
+    btn.className = `album-thumb-btn ${index === currentAlbumIndex ? 'active' : ''}`;
+    btn.title = album.title;
+    btn.innerHTML = `<img src="${album.cover}" alt="${album.title}">`;
+    btn.addEventListener('click', () => rotateToAlbum(index));
+    bar.insertBefore(btn, uploadBtn);
+  });
+}
+
 function setupUI() {
-  document.getElementById('thumb-snatch').addEventListener('click', () => loadAlbum(0));
-  document.getElementById('thumb-stayin').addEventListener('click', () => loadAlbum(1));
+  renderThumbnails();
 
   // Custom User Image Upload
   const uploadInput = document.getElementById('cover-file-input');
@@ -571,8 +758,9 @@ function setupUI() {
       };
 
       albums.push(customAlbum);
-      addAlbumThumb(customAlbum, albums.length - 1);
-      loadAlbum(albums.length - 1);
+      buildCarousel();
+      renderThumbnails();
+      rotateToAlbum(albums.length - 1);
     };
     reader.readAsDataURL(file);
   });
@@ -595,7 +783,6 @@ function setupUI() {
     }
   };
 
-  // Check OAuth callback code on page load
   checkAuthCallback().then(async (token) => {
     updateAuthUI();
     if (token) {
@@ -634,11 +821,7 @@ function setupUI() {
   });
 
   updateAuthUI();
-
-
-  // Spotify Album Search
   setupSpotifySearch();
-
   setupAudioPlayer();
 }
 
@@ -691,7 +874,6 @@ function setupSpotifySearch() {
           dropdown.style.display = 'none';
           searchInput.value = '';
 
-          // Fetch full album details for tracklist
           const details = await getSpotifyAlbumDetails(alb.id);
           const tracks = (details?.tracks?.items || []).map((t, idx) => `${idx + 1}. ${t.name}`);
 
@@ -713,8 +895,9 @@ function setupSpotifySearch() {
           };
 
           albums.push(newAlbum);
-          addAlbumThumb(newAlbum, albums.length - 1);
-          loadAlbum(albums.length - 1);
+          buildCarousel();
+          renderThumbnails();
+          rotateToAlbum(albums.length - 1);
         });
 
         dropdown.appendChild(item);
@@ -724,7 +907,6 @@ function setupSpotifySearch() {
     }, 350);
   });
 
-  // Close dropdown when clicking outside
   document.addEventListener('click', (e) => {
     if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
       dropdown.style.display = 'none';
@@ -737,7 +919,6 @@ function setupAudioPlayer() {
   const progressTrack = document.getElementById('progress-track');
   const volumeSlider = document.getElementById('volume-slider');
 
-  // Preview Audio Element Events
   previewAudio.addEventListener('timeupdate', () => {
     if (previewAudio.duration && !isNaN(previewAudio.duration)) {
       updateProgress(previewAudio.currentTime, previewAudio.duration);
@@ -763,7 +944,6 @@ function setupAudioPlayer() {
     console.warn("Audio element event notice:", e);
   });
 
-  // Click on progress track to seek
   if (progressTrack) {
     progressTrack.addEventListener('click', (e) => {
       const rect = progressTrack.getBoundingClientRect();
@@ -774,7 +954,6 @@ function setupAudioPlayer() {
     });
   }
 
-  // Volume slider control
   if (volumeSlider) {
     volumeSlider.addEventListener('input', (e) => {
       const vol = e.target.value / 100;
@@ -782,12 +961,10 @@ function setupAudioPlayer() {
     });
   }
 
-  // Play / Pause Button - Guarantees audible sound
   playBtn.addEventListener('click', async () => {
     const album = albums[currentAlbumIndex];
 
     if (isPlaying) {
-      // 1. Pause everything
       setPlayUI(false);
       previewAudio.pause();
 
@@ -803,10 +980,8 @@ function setupAudioPlayer() {
         await pauseSpotifyPlayback();
       }
     } else {
-      // 2. Start playback
       setPlayUI(true);
 
-      // Tier A: If user is connected via Spotify Premium SDK, trigger Spotify playback
       let sdkSuccess = false;
       if (getAccessToken() && album.spotifyUri) {
         const deviceId = getActiveDeviceId();
@@ -815,7 +990,6 @@ function setupAudioPlayer() {
         }
       }
 
-      // Tier B: Command Spotify Embed Controller
       if (spotifyEmbedController) {
         try {
           spotifyEmbedController.play();
@@ -824,8 +998,6 @@ function setupAudioPlayer() {
         }
       }
 
-      // Tier C: Guaranteed audible sound via local Audio Preview!
-      // If SDK is not actively playing, stream local high-quality audio
       if (!sdkSuccess && album.audioPreview) {
         const targetUrl = new URL(album.audioPreview, window.location.href).href;
         if (previewAudio.src !== targetUrl) {
@@ -838,12 +1010,13 @@ function setupAudioPlayer() {
     }
   });
 
+  // Previous & Next buttons in the player smoothly spin the carousel
   document.getElementById('btn-prev').addEventListener('click', async () => {
     if (getAccessToken()) {
       await skipSpotifyPrevious();
     }
     const prev = (currentAlbumIndex - 1 + albums.length) % albums.length;
-    loadAlbum(prev);
+    rotateToAlbum(prev);
   });
 
   document.getElementById('btn-next').addEventListener('click', async () => {
@@ -851,22 +1024,8 @@ function setupAudioPlayer() {
       await skipSpotifyNext();
     }
     const next = (currentAlbumIndex + 1) % albums.length;
-    loadAlbum(next);
+    rotateToAlbum(next);
   });
-}
-
-
-function addAlbumThumb(album, index) {
-  const bar = document.getElementById('album-bar');
-  const uploadBtn = document.getElementById('btn-upload');
-
-  const btn = document.createElement('button');
-  btn.className = 'album-thumb-btn';
-  btn.title = album.title;
-  btn.innerHTML = `<img src="${album.cover}" alt="${album.title}">`;
-  btn.addEventListener('click', () => loadAlbum(index));
-
-  bar.insertBefore(btn, uploadBtn);
 }
 
 function onWindowResize() {
@@ -881,23 +1040,53 @@ function onWindowResize() {
 function animate() {
   requestAnimationFrame(animate);
 
-  if (autoRotate && !isDragging) {
-    targetRotation.y += 0.005;
+  const N = albums.length;
+  const deltaTheta = (2 * Math.PI) / N;
+
+  if (!isDragging) {
+    if (Math.abs(spinVelocity) > 0.0004) {
+      // Coasting with inertia / momentum
+      targetCarouselRotationY += spinVelocity;
+      spinVelocity *= 0.93; // Exponential friction decay
+    } else {
+      // Magnetic Snap to nearest album when spin settles
+      spinVelocity = 0;
+      const snappedSlot = Math.round(-targetCarouselRotationY / deltaTheta);
+      const snapTargetAngle = -snappedSlot * deltaTheta;
+      targetCarouselRotationY += (snapTargetAngle - targetCarouselRotationY) * 0.12;
+
+      // Settle active album index
+      const activeIndex = ((snappedSlot % N) + N) % N;
+      if (activeIndex !== currentAlbumIndex && Math.abs(snapTargetAngle - targetCarouselRotationY) < 0.08) {
+        syncActiveAlbum(activeIndex);
+      }
+    }
+
+    // Subtle gentle spring for vertical tilt back towards resting angle (0.04 rad)
+    targetCarouselTiltX += (0.04 - targetCarouselTiltX) * 0.04;
   }
 
-  // Smooth rotation lerp
-  currentRotation.x += (targetRotation.x - currentRotation.x) * 0.08;
-  currentRotation.y += (targetRotation.y - currentRotation.y) * 0.08;
+  // Smooth rotation interpolation
+  currentCarouselRotationY += (targetCarouselRotationY - currentCarouselRotationY) * 0.12;
+  currentCarouselTiltX += (targetCarouselTiltX - currentCarouselTiltX) * 0.12;
 
-  if (caseGroup) {
-    caseGroup.rotation.x = currentRotation.x;
-    caseGroup.rotation.y = currentRotation.y;
-  }
+  if (carouselGroup) {
+    carouselGroup.rotation.y = currentCarouselRotationY;
+    carouselGroup.rotation.x = currentCarouselTiltX;
 
-  // Smooth case open/close hinge animation
-  if (frontLidGroup) {
-    currentOpenAngle += (targetOpenAngle - currentOpenAngle) * 0.1;
-    frontLidGroup.rotation.y = currentOpenAngle;
+    // Subtle floating levitation bob (aesthetic polish)
+    carouselGroup.position.y = -0.05 + Math.sin(Date.now() * 0.0018) * 0.035;
+
+    // Dynamic depth hierarchy (Pokemon TCGP effect): front case is sharp and primary
+    for (let i = 0; i < caseInstances.length; i++) {
+      const caseObj = caseInstances[i];
+      const caseAngle = i * deltaTheta + currentCarouselRotationY;
+      const cosAngle = Math.cos(caseAngle); // 1.0 when facing front, -1.0 when in back
+
+      // Gentle scale boost for foreground cases (0.94 -> 1.02)
+      const scale = 0.95 + 0.07 * Math.max(0, cosAngle);
+      caseObj.scale.set(scale, scale, scale);
+    }
   }
 
   renderer.render(scene, camera);
